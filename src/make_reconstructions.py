@@ -8,21 +8,31 @@ import torch
 def make_reconstructions_from_batch(batch, save_dir, epoch, tokenizer):
     check_batch(batch)
 
-    original_frames = tensor_to_np_frames(rearrange(batch['observations'], 'b t c h w -> b t h w c'))
+    try:
+        original_frames = tensor_to_np_frames(rearrange(batch['observations'], 'b t c h w -> b t h w c'))
+    except:
+        original_frames = tensor_to_np_frames(batch['observations'])
     all = [original_frames]
 
     rec_frames = generate_reconstructions_with_tokenizer(batch, tokenizer)
     all.append(rec_frames)
 
-    for i, image in enumerate(map(Image.fromarray, np.concatenate(list(np.concatenate((original_frames, rec_frames), axis=-2)), axis=-3))):
-        image.save(save_dir / f'epoch_{epoch:03d}_t_{i:03d}.png')
+    try:
+        for i, image in enumerate(map(Image.fromarray, np.concatenate(list(np.concatenate((original_frames, rec_frames), axis=-2)), axis=-3))):
+            image.save(save_dir / f'epoch_{epoch:03d}_t_{i:03d}.png')
+    except:
+        pass
+
 
     return
 
 
 def check_batch(batch):
     assert sorted(batch.keys()) == ['actions', 'ends', 'mask_padding', 'observations', 'rewards']
-    b, t, _, _, _ = batch['observations'].shape  # (B, T, C, H, W)
+    try:
+        b, t, _, _, _ = batch['observations'].shape  # (B, T, C, H, W)
+    except:
+        b, t, _ =  batch['observations'].shape # For RAM-based observations
     assert batch['actions'].shape == batch['rewards'].shape == batch['ends'].shape == batch['mask_padding'].shape == (b, t)
 
 
@@ -38,10 +48,14 @@ def check_float_btw_0_1(inputs):
 @torch.no_grad()
 def generate_reconstructions_with_tokenizer(batch, tokenizer):
     check_batch(batch)
-    inputs = rearrange(batch['observations'], 'b t c h w -> (b t) c h w')
-    outputs = reconstruct_through_tokenizer(inputs, tokenizer)
-    b, t, _, _, _ = batch['observations'].size()
-    outputs = rearrange(outputs, '(b t) c h w -> b t h w c', b=b, t=t)
+    try:
+        inputs = rearrange(batch['observations'], 'b t c h w -> (b t) c h w')
+        outputs = reconstruct_through_tokenizer(inputs, tokenizer)
+        b, t, _, _, _ = batch['observations'].size()
+        outputs = rearrange(outputs, '(b t) c h w -> b t h w c', b=b, t=t)
+    except:
+        inputs = batch['observations']
+        outputs = reconstruct_through_tokenizer(inputs, tokenizer)
     rec_frames = tensor_to_np_frames(outputs)
     return rec_frames
 

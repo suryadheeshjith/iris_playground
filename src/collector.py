@@ -16,13 +16,14 @@ from utils import EpisodeDirManager, RandomHeuristic
 
 
 class Collector:
-    def __init__(self, env: Union[SingleProcessEnv, MultiProcessEnv], dataset: EpisodesDataset, episode_dir_manager: EpisodeDirManager) -> None:
+    def __init__(self, env: Union[SingleProcessEnv, MultiProcessEnv], dataset: EpisodesDataset, episode_dir_manager: EpisodeDirManager, is_ram: bool) -> None:
         self.env = env
         self.dataset = dataset
         self.episode_dir_manager = episode_dir_manager
         self.obs = self.env.reset()
         self.episode_ids = [None] * self.env.num_envs
         self.heuristic = RandomHeuristic(self.env.num_actions)
+        self.is_ram = is_ram
 
     @torch.no_grad()
     def collect(self, agent: Agent, epoch: int, epsilon: float, should_sample: bool, temperature: float, burn_in: int, *, num_steps: Optional[int] = None, num_episodes: Optional[int] = None):
@@ -51,7 +52,11 @@ class Collector:
         while not should_stop(steps, episodes):
 
             observations.append(self.obs)
-            obs = rearrange(torch.FloatTensor(self.obs).div(255), 'n h w c -> n c h w').to(agent.device)
+            obs = torch.FloatTensor(self.obs).div(255)
+            if not self.is_ram:
+                obs = rearrange(obs, 'n h w c -> n c h w')
+            
+            obs = obs.to(agent.device)
             act = agent.act(obs, should_sample=should_sample, temperature=temperature).cpu().numpy()
 
             if random.random() < epsilon:
@@ -112,8 +117,12 @@ class Collector:
     def add_experience_to_dataset(self, observations: List[np.ndarray], actions: List[np.ndarray], rewards: List[np.ndarray], dones: List[np.ndarray]) -> None:
         assert len(observations) == len(actions) == len(rewards) == len(dones)
         for i, (o, a, r, d) in enumerate(zip(*map(lambda arr: np.swapaxes(arr, 0, 1), [observations, actions, rewards, dones]))):  # Make everything (N, T, ...) instead of (T, N, ...)
+            if self.is_ram:
+                obs = torch.ByteTensor(o).contiguous()
+            else:
+                obs = torch.ByteTensor(o).permute(0, 3, 1, 2).contiguous() # channel-first
             episode = Episode(
-                observations=torch.ByteTensor(o).permute(0, 3, 1, 2).contiguous(),  # channel-first
+                observations=obs,  
                 actions=torch.LongTensor(a),
                 rewards=torch.FloatTensor(r),
                 ends=torch.LongTensor(d),

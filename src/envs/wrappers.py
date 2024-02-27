@@ -25,6 +25,22 @@ def make_atari(id, size=64, max_episode_steps=None, noop_max=30, frame_skip=4, d
     return env
 
 
+
+def make_atari_ram(id, max_episode_steps=None, noop_max=30, frame_skip=4, done_on_life_loss=False, clip_reward=False):
+    env = gym.make(id)
+    assert 'NoFrameskip' in env.spec.id or 'Frameskip' not in env.spec
+    if clip_reward:
+        env = RewardClippingWrapper(env)
+    if max_episode_steps is not None:
+        env = gym.wrappers.TimeLimit(env, max_episode_steps=max_episode_steps)
+    if noop_max is not None:
+        env = NoopResetEnv(env, noop_max=noop_max)
+    env = MaxAndSkipEnv(env, skip=frame_skip)
+    if done_on_life_loss:
+        env = EpisodicLifeEnv(env)
+    return env
+
+
 class ResizeObsWrapper(gym.ObservationWrapper):
     def __init__(self, env: gym.Env, size: Tuple[int, int]) -> None:
         gym.ObservationWrapper.__init__(self, env)
