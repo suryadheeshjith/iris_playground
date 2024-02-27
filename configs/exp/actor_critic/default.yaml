@@ -1,1 +1,3 @@
+# Image ActorCritic
+_target_: models.actor_critic.ActorCritic
 use_original_obs: False

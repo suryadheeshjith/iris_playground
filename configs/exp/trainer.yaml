@@ -1,20 +1,22 @@
 # @package _global_
 defaults:
   - _self_
-  - tokenizer: default
-  - world_model: default
-  - actor_critic: default
-  - env: default
+  - tokenizer: state_space # default, state_space
+  - world_model: state_space # default, state_space
+  - actor_critic: state_space # default, state_space
+  - env: state_space # default, state_space
   - datasets: default
+
+env:
+  train:
+    _target_: envs.make_atari_ram # envs.make_atari, envs.make_atari_ram
+    id: Breakout-ramNoFrameskip-v4 # BreakoutNoFrameskip-v4, Breakout-ramNoFrameskip-v4
 
 ### experiment args
 experiment: trainer
 output_dir: ${join_path:${hydra:sweep.dir},${hydra:sweep.subdir}}
 log_path: ${join_path:${hydra:sweep.dir},${hydra:sweep.subdir}, 'logs'}
 data_overlay: ''
-env:
-  train:
-    id: BreakoutNoFrameskip-v4
 
 wandb:
   mode: disabled # online, disabled
@@ -66,20 +68,20 @@ training:
     batch_num_samples: 256
     grad_acc_steps: 1
     max_grad_norm: 10.0
-    start_after_epochs: 5
+    start_after_epochs: 3 # 5
     steps_per_epoch: 200
   world_model:
     batch_num_samples: 64
     grad_acc_steps: 1
     max_grad_norm: 10.0
     weight_decay: 0.01
-    start_after_epochs: 25
+    start_after_epochs: 2 #25
     steps_per_epoch: 200
   actor_critic:
     batch_num_samples: 64
     grad_acc_steps: 1
     max_grad_norm: 10.0
-    start_after_epochs: 50
+    start_after_epochs: 4 #50
     steps_per_epoch: 200
     imagine_horizon: ${common.sequence_length}
     burn_in: 20

@@ -1,0 +1,3 @@
+### State-space Tokenizer
+_target_: models.tokenizer.Tokenizer_RAM
+vocab_size: 128

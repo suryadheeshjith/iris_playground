@@ -1,0 +1,11 @@
+### State
+_target_: models.TransformerConfig
+tokens_per_block: 129 # 17
+max_blocks: 20
+attention: 'causal'
+num_layers: 2 # 10
+num_heads: 2 # 4
+embed_dim: 32 # 256
+embed_pdrop: 0.1
+resid_pdrop: 0.1
+attn_pdrop: 0.1

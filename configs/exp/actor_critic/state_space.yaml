@@ -1,0 +1,3 @@
+# State space ActorCritic
+_target_: models.actor_critic.ActorCriticRAM
+use_original_obs: False
