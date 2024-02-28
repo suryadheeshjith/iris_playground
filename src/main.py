@@ -4,7 +4,7 @@ from omegaconf import DictConfig
 from trainer import Trainer
 
 
-@hydra.main(config_path="../configs", config_name="trainer")
+@hydra.main(config_path="../configs/exp", config_name="trainer")
 def main(cfg: DictConfig):
     trainer = Trainer(cfg)
     trainer.run()

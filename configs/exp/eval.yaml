@@ -1,21 +1,22 @@
 # @package _global_
 defaults:
   - _self_
-  - tokenizer: default # default, state_space
-  - world_model: default # default, state_space
-  - actor_critic: default # default, state_space
-  - env: default # default, state_space
+  - tokenizer: state_space # default, state_space
+  - world_model: state_space # default, state_space
+  - actor_critic: state_space # default, state_space
+  - env: state_space # default, state_space
   - datasets: default
 
 env:
   train:
-    _target_: envs.make_atari # envs.make_atari, envs.make_atari_ram
-    id: BreakoutNoFrameskip-v4 # BreakoutNoFrameskip-v4, Breakout-ramNoFrameskip-v4
+    _target_: envs.make_atari_ram # envs.make_atari, envs.make_atari_ram
+    id: Breakout-ramNoFrameskip-v4 # BreakoutNoFrameskip-v4, Breakout-ramNoFrameskip-v4
 
 ### experiment args
 experiment: trainer
 output_dir: ${join_path:${hydra:sweep.dir},${hydra:sweep.subdir}}
 log_path: ${join_path:${hydra:sweep.dir},${hydra:sweep.subdir}, 'logs'}
+checkpoint_path: /scratch/sd5313/spring24/DDRL/iris_playground/.LOCAL/trainer/2024-02-27-trainer_test/checkpoints/last.pt
 data_overlay: ''
 
 wandb:
@@ -27,15 +28,15 @@ wandb:
   notes: null
 
 initialization:
-  path_to_checkpoint: null
-  load_tokenizer: False
+  path_to_checkpoint: ${checkpoint_path}
+  load_tokenizer: True
   load_world_model: False
-  load_actor_critic: False
+  load_actor_critic: True
 
 common:
-  epochs: 600
+  epochs: 1
   device: cuda:0
-  do_checkpoint: True
+  do_checkpoint: False
   seed: 0
   sequence_length: ${world_model.max_blocks}
   resume: False # set by resume.sh script only.
@@ -52,36 +53,36 @@ collection:
       num_steps: 200
       burn_in: ${training.actor_critic.burn_in}
   test:
-    num_envs: 8
-    num_episodes_to_save: ${collection.train.num_episodes_to_save}
+    num_envs: 25
+    num_episodes_to_save: 0
     config:
       epsilon: 0.0
       should_sample: True
       temperature: 0.5
-      num_episodes: 16
+      num_episodes: 100
       burn_in: ${training.actor_critic.burn_in}
 
 training:
-  should: True
+  should: False
   learning_rate: 0.0001
   tokenizer:
     batch_num_samples: 256
     grad_acc_steps: 1
     max_grad_norm: 10.0
-    start_after_epochs: 5
+    start_after_epochs: 3 # 5
     steps_per_epoch: 200
   world_model:
     batch_num_samples: 64
     grad_acc_steps: 1
     max_grad_norm: 10.0
     weight_decay: 0.01
-    start_after_epochs: 25
+    start_after_epochs: 2 #25
     steps_per_epoch: 200
   actor_critic:
     batch_num_samples: 64
     grad_acc_steps: 1
     max_grad_norm: 10.0
-    start_after_epochs: 50
+    start_after_epochs: 4 #50
     steps_per_epoch: 200
     imagine_horizon: ${common.sequence_length}
     burn_in: 20
@@ -91,15 +92,15 @@ training:
 
 evaluation:
   should: True
-  every: 5
+  every: 1
   tokenizer:
     batch_num_samples: ${training.tokenizer.batch_num_samples}
-    start_after_epochs: ${training.tokenizer.start_after_epochs}
-    save_reconstructions: True
+    start_after_epochs: 1
+    save_reconstructions: False
   world_model:
     batch_num_samples: ${training.world_model.batch_num_samples}
-    start_after_epochs: ${training.world_model.start_after_epochs}
+    start_after_epochs: 1
   actor_critic:
     num_episodes_to_save: ${training.actor_critic.batch_num_samples}
     horizon: ${training.actor_critic.imagine_horizon}
-    start_after_epochs: ${training.actor_critic.start_after_epochs}
+    start_after_epochs: 1

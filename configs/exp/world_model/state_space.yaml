@@ -1,6 +1,6 @@
 ### State
 _target_: models.TransformerConfig
-tokens_per_block: 129 # 17
+tokens_per_block: 2 # 17
 max_blocks: 20
 attention: 'causal'
 num_layers: 2 # 10

@@ -54,7 +54,7 @@ def generate_reconstructions_with_tokenizer(batch, tokenizer):
         b, t, _, _, _ = batch['observations'].size()
         outputs = rearrange(outputs, '(b t) c h w -> b t h w c', b=b, t=t)
     except:
-        inputs = batch['observations']
+        inputs = rearrange(batch['observations'], 'b t c-> (b t) c')
         outputs = reconstruct_through_tokenizer(inputs, tokenizer)
     rec_frames = tensor_to_np_frames(outputs)
     return rec_frames

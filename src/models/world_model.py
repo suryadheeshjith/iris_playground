@@ -13,6 +13,8 @@ from .tokenizer import Tokenizer
 from .transformer import Transformer, TransformerConfig
 from utils import init_weights, LossWithIntermediateLosses
 
+import logging
+# logging.info("x Shape {0}".format(x.shape))
 
 @dataclass
 class WorldModelOutput:
@@ -95,13 +97,15 @@ class WorldModel(nn.Module):
         return WorldModelOutput(x, logits_observations, logits_rewards, logits_ends)
 
     def compute_loss(self, batch: Batch, tokenizer: Tokenizer, **kwargs: Any) -> LossWithIntermediateLosses:
-
+        # logging.info("batch['observations'] Shape {0}".format(batch['observations'].shape)) ([64, 20, 3, 64, 64]) / ([64, 20, 128])
+        # logging.info("batch['actions'] Shape {0}".format(batch['actions'].shape)) [64, 20])
         with torch.no_grad():
-            obs_tokens = tokenizer.encode(batch['observations'], should_preprocess=True).tokens  # (BL, K)
-
+            obs_tokens = tokenizer.encode(batch['observations'], should_preprocess=True).tokens  # (B, L, K)  Why are we sending token indices??
+        # logging.info("obs_tokens Shape {0}".format(obs_tokens.shape)) ([64, 20, 16]) / ([64, 20, 1])
         act_tokens = rearrange(batch['actions'], 'b l -> b l 1')
+        # logging.info("act_tokens Shape {0}".format(act_tokens.shape)) ([64, 20, 1])
         tokens = rearrange(torch.cat((obs_tokens, act_tokens), dim=2), 'b l k1 -> b (l k1)')  # (B, L(K+1))
-
+        # logging.info("tokens Shape {0}".format(tokens.shape)) ([64, 20*17]) / ([64, 40])
         outputs = self(tokens)
 
         labels_observations, labels_rewards, labels_ends = self.compute_labels_world_model(obs_tokens, batch['rewards'], batch['ends'], batch['mask_padding'])

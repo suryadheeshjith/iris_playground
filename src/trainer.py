@@ -19,11 +19,22 @@ from collector import Collector
 from envs import SingleProcessEnv, MultiProcessEnv
 from episode import Episode
 from make_reconstructions import make_reconstructions_from_batch
-from models.actor_critic import ActorCritic
 from models.world_model import WorldModel
 from utils import configure_optimizer, EpisodeDirManager, set_seed
 
 import logging
+
+
+####
+# TODO: 
+# * Understand world model and slicer.
+# * Create new world model class that takes the tokens from tokenizer and predicts next token instead of 
+#   using token indices and embedding them. See note on page 15 of paper.
+# * actor critic modularize - inheritance
+# * world_model_env check shapes if right 
+# * agent playing / reconstructions from state space environment. Maybe concurrently running envs?
+# * Understand actor-critic / shapes
+####
 
 class Trainer:
     def __init__(self, cfg: DictConfig) -> None:
@@ -42,6 +53,7 @@ class Trainer:
         self.cfg = cfg
         self.start_epoch = 1
         self.device = torch.device(cfg.common.device)
+        self.is_ram = cfg.env.train._target_ == "envs.make_atari_ram"
 
         self.output_dir = Path(cfg.output_dir)
         self.ckpt_dir = self.output_dir / 'checkpoints'
@@ -50,10 +62,11 @@ class Trainer:
         self.reconstructions_dir = self.output_dir / 'reconstructions'
 
         if not cfg.common.resume:
-            self.ckpt_dir.mkdir(exist_ok=True, parents=False)
-            self.media_dir.mkdir(exist_ok=True, parents=False)
-            self.episode_dir.mkdir(exist_ok=True, parents=False)
-            self.reconstructions_dir.mkdir(exist_ok=True, parents=False)
+            recopy = '.LOCAL' in cfg.output_dir
+            self.ckpt_dir.mkdir(exist_ok=recopy, parents=False)
+            self.media_dir.mkdir(exist_ok=recopy, parents=False)
+            self.episode_dir.mkdir(exist_ok=recopy, parents=False)
+            self.reconstructions_dir.mkdir(exist_ok=recopy, parents=False)
 
         episode_manager_train = EpisodeDirManager(self.episode_dir / 'train', max_num_episodes=cfg.collection.train.num_episodes_to_save)
         episode_manager_test = EpisodeDirManager(self.episode_dir / 'test', max_num_episodes=cfg.collection.test.num_episodes_to_save)
@@ -66,23 +79,23 @@ class Trainer:
         if self.cfg.training.should:
             train_env = create_env(cfg.env.train, cfg.collection.train.num_envs)
             self.train_dataset = instantiate(cfg.datasets.train)
-            self.train_collector = Collector(train_env, self.train_dataset, episode_manager_train)
+            self.train_collector = Collector(train_env, self.train_dataset, episode_manager_train, self.is_ram)
 
         if self.cfg.evaluation.should:
             test_env = create_env(cfg.env.test, cfg.collection.test.num_envs)
             self.test_dataset = instantiate(cfg.datasets.test)
-            self.test_collector = Collector(test_env, self.test_dataset, episode_manager_test)
+            self.test_collector = Collector(test_env, self.test_dataset, episode_manager_test, self.is_ram)
 
         assert self.cfg.training.should or self.cfg.evaluation.should
         env = train_env if self.cfg.training.should else test_env
 
         tokenizer = instantiate(cfg.tokenizer)
         world_model = WorldModel(obs_vocab_size=tokenizer.vocab_size, act_vocab_size=env.num_actions, config=instantiate(cfg.world_model))
-        actor_critic = ActorCritic(**cfg.actor_critic, act_vocab_size=env.num_actions)
+        actor_critic = instantiate(cfg.actor_critic, act_vocab_size=env.num_actions, is_ram=self.is_ram)
         self.agent = Agent(tokenizer, world_model, actor_critic).to(self.device)
-        print(f'{sum(p.numel() for p in self.agent.tokenizer.parameters())} parameters in agent.tokenizer')
-        print(f'{sum(p.numel() for p in self.agent.world_model.parameters())} parameters in agent.world_model')
-        print(f'{sum(p.numel() for p in self.agent.actor_critic.parameters())} parameters in agent.actor_critic')
+        logging.info(f'{sum(p.numel() for p in self.agent.tokenizer.parameters())} parameters in agent.tokenizer')
+        logging.info(f'{sum(p.numel() for p in self.agent.world_model.parameters())} parameters in agent.world_model')
+        logging.info(f'{sum(p.numel() for p in self.agent.actor_critic.parameters())} parameters in agent.actor_critic')
 
         self.optimizer_tokenizer = torch.optim.Adam(self.agent.tokenizer.parameters(), lr=cfg.training.learning_rate)
         self.optimizer_world_model = configure_optimizer(self.agent.world_model, cfg.training.learning_rate, cfg.training.world_model.weight_decay)
@@ -98,7 +111,7 @@ class Trainer:
 
         for epoch in range(self.start_epoch, 1 + self.cfg.common.epochs):
 
-            print(f"\nEpoch {epoch} / {self.cfg.common.epochs}\n")
+            logging.info(f"\nEpoch {epoch} / {self.cfg.common.epochs}\n")
             start_time = time.time()
             to_log = []
 
@@ -270,7 +283,7 @@ class Trainer:
         self.train_dataset.load_disk_checkpoint(self.ckpt_dir / 'dataset')
         if self.cfg.evaluation.should:
             self.test_dataset.num_seen_episodes = torch.load(self.ckpt_dir / 'num_seen_episodes_test_dataset.pt')
-        print(f'Successfully loaded model, optimizer and {len(self.train_dataset)} episodes from {self.ckpt_dir.absolute()}.')
+        logging.info(f'Successfully loaded model, optimizer and {len(self.train_dataset)} episodes from {self.ckpt_dir.absolute()}.')
 
     def _to_device(self, batch: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
         return {k: batch[k].to(self.device) for k in batch}

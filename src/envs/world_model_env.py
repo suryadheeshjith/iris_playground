@@ -12,7 +12,7 @@ import torchvision
 
 class WorldModelEnv:
 
-    def __init__(self, tokenizer: torch.nn.Module, world_model: torch.nn.Module, device: Union[str, torch.device], env: Optional[gym.Env] = None) -> None:
+    def __init__(self, tokenizer: torch.nn.Module, world_model: torch.nn.Module, device: Union[str, torch.device], env: Optional[gym.Env] = None, is_ram: bool = False) -> None:
 
         self.device = torch.device(device)
         self.world_model = world_model.to(self.device).eval()
@@ -21,6 +21,7 @@ class WorldModelEnv:
         self.keys_values_wm, self.obs_tokens, self._num_observations_tokens = None, None, None
 
         self.env = env
+        self.is_ram = is_ram
 
     @property
     def num_observations_tokens(self) -> int:
@@ -94,7 +95,11 @@ class WorldModelEnv:
     @torch.no_grad()
     def decode_obs_tokens(self) -> List[Image.Image]:
         embedded_tokens = self.tokenizer.embedding(self.obs_tokens)     # (B, K, E)
-        z = rearrange(embedded_tokens, 'b (h w) e -> b e h w', h=int(np.sqrt(self.num_observations_tokens)))
+        if self.is_ram:
+            z = rearrange(embedded_tokens, 'b k e -> b (e k)', k=int(np.sqrt(self.num_observations_tokens)))  # Need to check this
+        else:
+            z = rearrange(embedded_tokens, 'b (h w) e -> b e h w', h=int(np.sqrt(self.num_observations_tokens)))
+
         rec = self.tokenizer.decode(z, should_postprocess=True)         # (B, C, H, W)
         return torch.clamp(rec, 0, 1)
 
