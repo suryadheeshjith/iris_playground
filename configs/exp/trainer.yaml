@@ -1,16 +1,16 @@
 # @package _global_
 defaults:
   - _self_
-  - tokenizer: default # default, state_space
-  - world_model: default # default, state_space
-  - actor_critic: default # default, state_space
-  - env: default # default, state_space
+  - tokenizer: state_space # default, state_space
+  - world_model: state_space # default, state_space
+  - actor_critic: state_space # default, state_space
+  - env: state_space # default, state_space
   - datasets: default
 
 env:
   train:
-    _target_: envs.make_atari # envs.make_atari, envs.make_atari_ram
-    id: BreakoutNoFrameskip-v4 # BreakoutNoFrameskip-v4, Breakout-ramNoFrameskip-v4
+    _target_: envs.make_atari_ram # envs.make_atari, envs.make_atari_ram
+    id: Assault-ramNoFrameskip-v4 # BreakoutNoFrameskip-v4, Breakout-ramNoFrameskip-v4, AssaultNoFrameskip-v4, Assault-ramNoFrameskip-v4
 
 ### experiment args
 experiment: trainer
