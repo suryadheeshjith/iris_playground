@@ -21,7 +21,7 @@ data_overlay: ''
 wandb:
   mode: online # online, disabled
   project: iris
-  entity: suryadheeshjith
+  entity: ddrl-project
   group: null
   tags: null
   notes: null

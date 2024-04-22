@@ -8,6 +8,8 @@ experiments
 .LOCAL
 roms
 trainer
+configs/conf.yaml
+.python-greene
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
