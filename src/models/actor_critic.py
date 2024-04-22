@@ -252,10 +252,12 @@ class ActorCriticRAM(nn.Module):
         actual_observation = initial_observations[:, -1]
         self.reset(n=initial_observations.size(0), burnin_observations=burnin_observations, mask_padding=None)
 
-        outputs_ac = self(actual_observation)
+        outputs_ac = self(actual_observation) # logits_actions: B, 1, num_actions
+        pred_actions = torch.argmax(outputs_ac.logits_actions, dim=-1)
+        acc = (pred_actions == expert_actions).float().mean()
         d = Categorical(logits=outputs_ac.logits_actions)
-        actor_loss = d.log_prob(expert_actions).sum(-1).mean()
-        return actor_loss
+        actor_loss = - d.log_prob(expert_actions).sum(-1).mean()
+        return actor_loss, acc
 
 
     def imagine(self, batch: Batch, tokenizer: Tokenizer, world_model: WorldModel, horizon: int, show_pbar: bool = False) -> ImagineOutput:

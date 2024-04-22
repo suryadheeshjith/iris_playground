@@ -7,7 +7,7 @@ comp="compute=local"
 # GO BOTTOM TO TOP
 
 # local train
-./.python-greene submitit_hydra.py $comp exp=trainer name="$(date +%F)-trainer_test_breakout" wandb.mode=disabled
+./.python-greene submitit_hydra.py $comp exp=trainer name="$(date +%F)-trainer_test_breakout_bc"
 
 # local eval
 # ./.python-greene submitit_hydra.py $comp exp=eval name="$(date +%F)-eval_test"

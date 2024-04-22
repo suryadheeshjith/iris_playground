@@ -164,6 +164,7 @@ class Trainer:
         max_grad_norm = cfg_actor_critic.max_grad_norm
 
         loss_total_epoch = 0.0
+        accuracy_total_epoch = 0.0
 
         for _ in tqdm(range(steps_per_epoch), desc=f"Training {str(component)}", file=sys.stdout):
             optimizer.zero_grad()
@@ -172,16 +173,18 @@ class Trainer:
                 assert batch['observations'].shape[1] == sequence_length
                 batch = self._to_device(batch)
 
-                loss = component.compute_bc_loss(batch) / grad_acc_steps
+                loss, acc = component.compute_bc_loss(batch)
+                loss = loss / grad_acc_steps
                 loss.backward()
                 loss_total_epoch += loss.item() / steps_per_epoch
+                accuracy_total_epoch += acc / steps_per_epoch
 
             if max_grad_norm is not None:
                 torch.nn.utils.clip_grad_norm_(self.agent.actor_critic.parameters(), max_grad_norm)
 
             optimizer.step()
 
-        metrics_actor_critic = {f'{str(component)}/train/total_loss': loss_total_epoch}
+        metrics_actor_critic = {f'{str(component)}/train/bc_loss': loss_total_epoch, f'{str(component)}/train/accuracy': accuracy_total_epoch}
         return [{'epoch': epoch, **metrics_actor_critic}]
 
     def bc_eval_actor_critic(self, epoch: int):
