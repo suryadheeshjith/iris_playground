@@ -16,7 +16,7 @@ env:
 experiment: trainer
 output_dir: ${join_path:${hydra:sweep.dir},${hydra:sweep.subdir}}
 log_path: ${join_path:${hydra:sweep.dir},${hydra:sweep.subdir}, 'logs'}
-checkpoint_path: /scratch/sd5313/spring24/DDRL/iris_playground/.LOCAL/trainer/2024-02-27-trainer_test/checkpoints/last.pt
+checkpoint_path: #/scratch/sd5313/spring24/DDRL/iris_playground/.LOCAL/trainer/2024-02-27-trainer_test/checkpoints/last.pt <-- update here for checkpoint
 data_overlay: ''
 
 wandb:

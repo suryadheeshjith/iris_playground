@@ -112,21 +112,20 @@ class Trainer:
 
     def run(self) -> None:
 
-        if self.bc: 
-          for epoch in range(self.bc_epochs):
-              logging.info(f"\nEpoch {epoch} / {self.bc_epochs}\n")
-              start_time = time.time()
-              to_log = []
+        if self.cfg.bc.should: 
+            for epoch in range(self.cfg.bc.epochs):
+                logging.info(f"\nEpoch {epoch} / {self.bc_epochs}\n")
+                start_time = time.time()
+                to_log = []
 
-              to_log += self.train_agent_bc(epoch)
-              to_log += self.eval_agent_bc(epoch)
+                to_log += self.train_agent_bc(epoch)
+                to_log += self.eval_agent_bc(epoch)
 
-              if self.cfg.bc.should: # how does this should thing work?
-                  self.save_checkpoint(epoch, save_agent_only=not self.cfg.common.do_checkpoint)
-              
-              to_log.append({'duration': (time.time() - start_time) / 3600})
-              for metrics in to_log:
-                  wandb.log({'epoch': epoch, **metrics})
+                self.save_checkpoint(epoch, save_agent_only=True)
+                
+                to_log.append({'duration': (time.time() - start_time) / 3600})
+                for metrics in to_log:
+                    wandb.log({'epoch': epoch, **metrics})
         else:
           for epoch in range(self.start_epoch, 1 + self.cfg.common.epochs):
               logging.info(f"\nEpoch {epoch} / {self.cfg.common.epochs}\n")
@@ -151,6 +150,8 @@ class Trainer:
                   wandb.log({'epoch': epoch, **metrics})
 
         self.finish()
+
+    def train_agent_bc(self)
 
     def train_agent(self, epoch: int) -> None:
         self.agent.train()

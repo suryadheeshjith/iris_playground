@@ -10,7 +10,7 @@ defaults:
 env:
   train:
     _target_: envs.make_atari_ram # envs.make_atari, envs.make_atari_ram
-    id: Assault-ramNoFrameskip-v4 # BreakoutNoFrameskip-v4, Breakout-ramNoFrameskip-v4, AssaultNoFrameskip-v4, Assault-ramNoFrameskip-v4
+    id: Breakout-ramNoFrameskip-v4 # BreakoutNoFrameskip-v4, Breakout-ramNoFrameskip-v4, AssaultNoFrameskip-v4, Assault-ramNoFrameskip-v4
 
 ### experiment args
 experiment: trainer
@@ -60,6 +60,12 @@ collection:
       temperature: 0.5
       num_episodes: 16
       burn_in: ${training.actor_critic.burn_in}
+
+
+bc:
+  should: True
+  epochs: 20
+  
 
 training:
   should: True
