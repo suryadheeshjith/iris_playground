@@ -56,7 +56,7 @@ class Trainer:
         self.is_ram = cfg.env.train._target_ == "envs.make_atari_ram"
 
         self.output_dir = Path(cfg.output_dir)
-        self.ckpt_dir = self.output_dir / 'checkpoints'
+        self.ckpt_dir = self.output_dir / 'checkpoints' if not cfg.bc.should else self.output_dir / 'bc_checkpoints'
         self.media_dir = self.output_dir / 'media'
         self.episode_dir = self.output_dir / 'episodes'
         self.reconstructions_dir = self.output_dir / 'reconstructions'
@@ -127,6 +127,9 @@ class Trainer:
                 for metrics in to_log:
                     wandb.log({'epoch': epoch, **metrics})
         else:
+          if self.cfg.training.load_bc_agent:
+                self.agent.load(self.cfg.training.bc_agent_path, device=self.device)
+              
           for epoch in range(self.start_epoch, 1 + self.cfg.common.epochs):
               logging.info(f"\nEpoch {epoch} / {self.cfg.common.epochs}\n")
               start_time = time.time()
@@ -151,7 +154,14 @@ class Trainer:
 
         self.finish()
 
-    def train_agent_bc(self)
+    def train_agent_bc(self):
+        # TODO
+        pass
+
+
+    def eval_agent_bc(self):
+        # TODO
+        pass
 
     def train_agent(self, epoch: int) -> None:
         self.agent.train()
@@ -284,7 +294,7 @@ class Trainer:
             self.train_dataset.update_disk_checkpoint(ckpt_dataset_dir)
             if self.cfg.evaluation.should:
                 torch.save(self.test_dataset.num_seen_episodes, self.ckpt_dir / 'num_seen_episodes_test_dataset.pt')
-
+    
     def save_checkpoint(self, epoch: int, save_agent_only: bool) -> None:
         tmp_checkpoint_dir = Path('checkpoints_tmp')
         shutil.copytree(src=self.ckpt_dir, dst=tmp_checkpoint_dir, ignore=shutil.ignore_patterns('dataset'))
