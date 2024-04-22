@@ -4,6 +4,7 @@ import torch
 from torch.utils.data import Dataset
 import numpy as np
 import os
+import random
 
 # NOTE: To get data with different sized stacks, you would have to generate it first.
 
@@ -39,16 +40,18 @@ class BCDataset(Dataset):
             state_list.extend(states)
             actions_one_hot.extend(actions)
 
-        self.states = state_list
+        self.states = state_list # Each state is of shape [1, stacksize, 128]
         self.targets = actions_one_hot
     
     def __len__(self):
         return len(self.states)
-    
-    def __getitem__(self, index):
-        state = self.states[index]
-        target = self.targets[index]
-        return state.float() / 255.0, target
+
+    def sample_batch(self, batch_num_samples: int):
+        indices = random.sample(range(len(self.states)), batch_num_samples)
+        states = torch.tensor([self.states[i] for i in indices])
+        targets = torch.tensor([self.targets[i] for i in indices])
+        batch = {'observations': states.float() / 255.0, 'actions': targets}    
+        return batch
     
     def _load_state_action_pair_traj(self, trajectory_file, stateskip=1, offset=0):
         """
@@ -100,11 +103,8 @@ if __name__ == '__main__':
     env_name = 'BreakoutNoFrameskip-v4'
 
     train_dataset = BCDataset(main_folder, env_name)
+    batch = train_dataset.sample_batch(32)
 
-    data_loader = DataLoader(train_dataset, batch_size=1, shuffle=True)
-    for i, (states, target) in enumerate(data_loader):
-        print(states.shape)
-        print(target)
-        if i > 2:
-            break
-    print('done')
+    print(batch['observations'].shape)
+    print(batch['actions'].shape)
+    

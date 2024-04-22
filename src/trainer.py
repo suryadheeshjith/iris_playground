@@ -116,6 +116,7 @@ class Trainer:
                 to_log = []
 
                 to_log += self.bc_train_actor_critic(epoch)
+                self.agent.actor_critic.eval()
                 to_log += self.bc_eval_actor_critic(epoch)
 
                 self.save_checkpoint(epoch, save_agent_only=True)
@@ -148,7 +149,7 @@ class Trainer:
 
         self.finish()
 
-    def bc_train_actor_critic(self):
+    def bc_train_actor_critic(self, epoch: int):
         # TODO
         self.agent.train()
         self.agent.zero_grad()
@@ -156,11 +157,42 @@ class Trainer:
         metrics_actor_critic = {}
 
         cfg_actor_critic = self.cfg.bc.actor_critic
+        component = self.agent.actor_critic
+        steps_per_epoch = cfg_actor_critic.steps_per_epoch
+        optimizer = self.bc_optimizer_actor_critic
+        grad_acc_steps = cfg_actor_critic.grad_acc_steps
+        batch_num_samples = cfg_actor_critic.batch_num_samples
+        sequence_length = cfg_actor_critic.burn_in + 1
+        max_grad_norm = cfg_actor_critic.max_grad_norm
 
-        # metrics_actor_critic = self.train_component(self.agent.actor_critic, self.bc_optimizer_actor_critic, sequence_length=1 + self.cfg.bc.burn_in, sample_from_start=False, **cfg_actor_critic)
 
+        loss_total_epoch = 0.0
+        intermediate_losses = defaultdict(float)
 
-    def bc_eval_actor_critic(self):
+        for _ in tqdm(range(steps_per_epoch), desc=f"Training {str(component)}", file=sys.stdout):
+            optimizer.zero_grad()
+            for _ in range(grad_acc_steps):
+                batch = self.train_dataset.sample_batch(batch_num_samples)
+                assert batch['observations'][1] == sequence_length
+                batch = self._to_device(batch)
+
+                losses = component.compute_bc_loss(batch) / grad_acc_steps
+                loss_total_step = losses.loss_total
+                loss_total_step.backward()
+                loss_total_epoch += loss_total_step.item() / steps_per_epoch
+
+                for loss_name, loss_value in losses.intermediate_losses.items():
+                    intermediate_losses[f"{str(component)}/train/{loss_name}"] += loss_value / steps_per_epoch
+
+            if max_grad_norm is not None:
+                torch.nn.utils.clip_grad_norm_(self.agent.actor_critic.parameters(), max_grad_norm)
+
+            optimizer.step()
+
+        metrics_actor_critic = {f'{str(component)}/train/total_loss': loss_total_epoch, **intermediate_losses}
+        return [{'epoch': epoch, **metrics_actor_critic}]
+
+    def bc_eval_actor_critic(self, epoch: int):
         # TODO
         pass
 

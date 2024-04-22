@@ -70,7 +70,14 @@ bc:
   should: False
   epochs: 20
   learning_rate: 0.0001
-  burn_in: 3
+  actor_critic:
+    batch_num_samples: ${training.actor_critic.batch_num_samples}
+    grad_acc_steps: ${training.actor_critic.grad_acc_steps}
+    max_grad_norm: ${training.actor_critic.max_grad_norm}
+    burn_in: 3
+    steps_per_epoch: ${training.actor_critic.steps_per_epoch}
+    gamma: ${training.actor_critic.gamma}
+    lambda_: ${training.actor_critic.lambda_}
 
 training:
   should: True
@@ -94,7 +101,7 @@ training:
     batch_num_samples: 64
     grad_acc_steps: 1
     max_grad_norm: 10.0
-    start_after_epochs: 50
+    start_after_epochs: 0
     steps_per_epoch: 200
     imagine_horizon: ${common.sequence_length}
     burn_in: 20
