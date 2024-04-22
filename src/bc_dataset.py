@@ -14,9 +14,10 @@ def get_all_files(directory):
     return files
 
 class BCDataset(Dataset):
-    def __init__(self, main_folder, env_name):
+    def __init__(self, main_folder, env_name, name = None):
         self.main_folder = main_folder
         self.env_name = env_name
+        self.name = name if name is not None else 'dataset'
         self.states = []
         self.targets = []
         self._load_data()

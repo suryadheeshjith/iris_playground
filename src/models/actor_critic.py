@@ -195,7 +195,10 @@ class ActorCriticRAM(nn.Module):
         if burnin_observations is not None:
             # assert burnin_observations.ndim == 5 and burnin_observations.size(0) == n and mask_padding is not None and burnin_observations.shape[:2] == mask_padding.shape
             for i in range(burnin_observations.size(1)):
-                if mask_padding[:, i].any():
+                if mask_padding is None:
+                    with torch.no_grad():
+                        self(burnin_observations[:, i], None)
+                elif mask_padding[:, i].any():
                     with torch.no_grad():
                         self(burnin_observations[:, i], mask_padding[:, i])
 
@@ -243,22 +246,16 @@ class ActorCriticRAM(nn.Module):
 
         return LossWithIntermediateLosses(loss_actions=loss_actions, loss_values=loss_values, loss_entropy=loss_entropy)
     
+    def compute_bc_loss(self, batch: Batch) -> LossWithIntermediateLosses:
+        initial_observations, expert_actions = batch['observations'], batch['actions']
+        burnin_observations = initial_observations[:, :-1]
+        actual_observation = initial_observations[:, -1]
+        self.reset(n=initial_observations.size(0), burnin_observations=burnin_observations, mask_padding=None)
 
-    ## BC loop should be:
-    # for epoch in range(epochs):
-    # for batch in dataloader:
-    # load shuffled batch of obs - action pairs
-    # compute predicted output based on obs
-    # compute loss between predicted output and action
-    # backpropagate loss
-    # Notes: don't actually need to interact with environment OR imagined environment
-    # Difficulty: How do we deal with the LSTM?
-    def compute_bc_loss(self, batch: Batch, gamma: float, lambda_: float, **kwargs: Any) -> LossWithIntermediateLosses:
-        assert not self.use_original_obs
-
-        outputs = self.compute_bc_outputs(batch)
-
-        ### Compute BC loss
+        outputs_ac = self(actual_observation)
+        d = Categorical(logits=outputs_ac.logits_actions)
+        actor_loss = d.log_prob(expert_actions).sum(-1).mean()
+        return actor_loss
 
 
     def imagine(self, batch: Batch, tokenizer: Tokenizer, world_model: WorldModel, horizon: int, show_pbar: bool = False) -> ImagineOutput:

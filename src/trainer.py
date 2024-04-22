@@ -65,22 +65,21 @@ class Trainer:
             return MultiProcessEnv(env_fn, num_envs, should_wait_num_envs_ratio=1.0) if num_envs > 1 else SingleProcessEnv(env_fn)
 
         if self.cfg.bc.should:
-            self.train_dataset = instantiate(cfg.datasets.bc)
+            self.bc_dataset = instantiate(cfg.datasets.bc, main_folder=cfg.bc_datapath)
         
-        else:
-            if self.cfg.training.should:
-                train_env = create_env(cfg.env.train, cfg.collection.train.num_envs)
-                self.train_dataset = instantiate(cfg.datasets.train)
-                self.train_collector = Collector(train_env, self.train_dataset, episode_manager_train, self.is_ram)
+        if self.cfg.training.should:
+            train_env = create_env(cfg.env.train, cfg.collection.train.num_envs)
+            self.train_dataset = instantiate(cfg.datasets.train)
+            self.train_collector = Collector(train_env, self.train_dataset, episode_manager_train, self.is_ram)
 
-            if self.cfg.evaluation.should:
-                test_env = create_env(cfg.env.test, cfg.collection.test.num_envs)
-                self.test_dataset = instantiate(cfg.datasets.test)
-                self.test_collector = Collector(test_env, self.test_dataset, episode_manager_test, self.is_ram)
-            
-            assert self.cfg.training.should or self.cfg.evaluation.should
+        if self.cfg.evaluation.should:
+            test_env = create_env(cfg.env.test, cfg.collection.test.num_envs)
+            self.test_dataset = instantiate(cfg.datasets.test)
+            self.test_collector = Collector(test_env, self.test_dataset, episode_manager_test, self.is_ram)
+        
+        assert self.cfg.bc.should or (self.cfg.training.should or self.cfg.evaluation.should)
 
-            env = train_env if self.cfg.training.should else test_env
+        env = train_env if self.cfg.training.should else test_env
 
         tokenizer = instantiate(cfg.tokenizer)
         world_model = WorldModel(obs_vocab_size=tokenizer.vocab_size, act_vocab_size=env.num_actions, config=instantiate(cfg.world_model))
@@ -111,7 +110,7 @@ class Trainer:
 
         if self.cfg.bc.should: 
             for epoch in range(self.cfg.bc.epochs):
-                logging.info(f"\nEpoch {epoch} / {self.bc_epochs}\n")
+                logging.info(f"\nEpoch {epoch} / {self.cfg.bc.epochs}\n")
                 start_time = time.time()
                 to_log = []
 
@@ -150,7 +149,6 @@ class Trainer:
         self.finish()
 
     def bc_train_actor_critic(self, epoch: int):
-        # TODO
         self.agent.train()
         self.agent.zero_grad()
 
@@ -165,36 +163,30 @@ class Trainer:
         sequence_length = cfg_actor_critic.burn_in + 1
         max_grad_norm = cfg_actor_critic.max_grad_norm
 
-
         loss_total_epoch = 0.0
-        intermediate_losses = defaultdict(float)
 
         for _ in tqdm(range(steps_per_epoch), desc=f"Training {str(component)}", file=sys.stdout):
             optimizer.zero_grad()
             for _ in range(grad_acc_steps):
-                batch = self.train_dataset.sample_batch(batch_num_samples)
-                assert batch['observations'][1] == sequence_length
+                batch = self.bc_dataset.sample_batch(batch_num_samples)
+                assert batch['observations'].shape[1] == sequence_length
                 batch = self._to_device(batch)
 
-                losses = component.compute_bc_loss(batch) / grad_acc_steps
-                loss_total_step = losses.loss_total
-                loss_total_step.backward()
-                loss_total_epoch += loss_total_step.item() / steps_per_epoch
-
-                for loss_name, loss_value in losses.intermediate_losses.items():
-                    intermediate_losses[f"{str(component)}/train/{loss_name}"] += loss_value / steps_per_epoch
+                loss = component.compute_bc_loss(batch) / grad_acc_steps
+                loss.backward()
+                loss_total_epoch += loss.item() / steps_per_epoch
 
             if max_grad_norm is not None:
                 torch.nn.utils.clip_grad_norm_(self.agent.actor_critic.parameters(), max_grad_norm)
 
             optimizer.step()
 
-        metrics_actor_critic = {f'{str(component)}/train/total_loss': loss_total_epoch, **intermediate_losses}
+        metrics_actor_critic = {f'{str(component)}/train/total_loss': loss_total_epoch}
         return [{'epoch': epoch, **metrics_actor_critic}]
 
     def bc_eval_actor_critic(self, epoch: int):
         # TODO
-        pass
+        return []
 
     def train_agent(self, epoch: int) -> None:
         self.agent.train()
