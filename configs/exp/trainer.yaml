@@ -14,7 +14,9 @@ env:
 
 datasets:
   bc:
-    env_name: {env.train.id}
+    env_name: BreakoutNoFrameskip-v4 # Do not use the ram version here since the folders are saved this way
+
+bc_datapath: /scratch/lvb243/ddrl-project/bc_generator/trajectories
 
 ### experiment args
 experiment: trainer
@@ -67,7 +69,7 @@ collection:
 
 
 bc:
-  should: False
+  should: True
   epochs: 20
   learning_rate: 0.0001
   actor_critic:
