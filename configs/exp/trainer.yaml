@@ -67,10 +67,11 @@ collection:
 
 
 bc:
-  should: True
+  should: False
   epochs: 20
   learning_rate: 0.0001
-  
+  burn_in: 3
+
 training:
   should: True
   load_bc_agent: False # Change

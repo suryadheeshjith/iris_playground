@@ -65,7 +65,7 @@ class Trainer:
             return MultiProcessEnv(env_fn, num_envs, should_wait_num_envs_ratio=1.0) if num_envs > 1 else SingleProcessEnv(env_fn)
 
         if self.cfg.bc.should:
-            self.bc_dataset = instantiate(cfg.datasets.bc)
+            self.train_dataset = instantiate(cfg.datasets.bc)
         
         else:
             if self.cfg.training.should:
@@ -115,8 +115,8 @@ class Trainer:
                 start_time = time.time()
                 to_log = []
 
-                to_log += self.train_agent_bc(epoch)
-                to_log += self.eval_agent_bc(epoch)
+                to_log += self.bc_train_actor_critic(epoch)
+                to_log += self.bc_eval_actor_critic(epoch)
 
                 self.save_checkpoint(epoch, save_agent_only=True)
                 
@@ -148,12 +148,19 @@ class Trainer:
 
         self.finish()
 
-    def train_agent_bc(self):
+    def bc_train_actor_critic(self):
         # TODO
-        pass
+        self.agent.train()
+        self.agent.zero_grad()
+
+        metrics_actor_critic = {}
+
+        cfg_actor_critic = self.cfg.bc.actor_critic
+
+        # metrics_actor_critic = self.train_component(self.agent.actor_critic, self.bc_optimizer_actor_critic, sequence_length=1 + self.cfg.bc.burn_in, sample_from_start=False, **cfg_actor_critic)
 
 
-    def eval_agent_bc(self):
+    def bc_eval_actor_critic(self):
         # TODO
         pass
 

@@ -144,3 +144,4 @@ dmypy.json
 roms-old/
 iris.ext3
 overlay-25GB-500K.ext3
+src/trajectories

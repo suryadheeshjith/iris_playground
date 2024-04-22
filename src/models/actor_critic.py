@@ -253,10 +253,10 @@ class ActorCriticRAM(nn.Module):
     # backpropagate loss
     # Notes: don't actually need to interact with environment OR imagined environment
     # Difficulty: How do we deal with the LSTM?
-    def compute_bc_loss(self, batch: Batch, tokenizer: Tokenizer, world_model: WorldModel, imagine_horizon: int, gamma: float, lambda_: float, entropy_weight: float, **kwargs: Any) -> LossWithIntermediateLosses:
+    def compute_bc_loss(self, batch: Batch, gamma: float, lambda_: float, **kwargs: Any) -> LossWithIntermediateLosses:
         assert not self.use_original_obs
 
-        outputs = self.compute_bc_outputs(batch, tokenizer, world_model, imagine_horizon)
+        outputs = self.compute_bc_outputs(batch)
 
         ### Compute BC loss
 

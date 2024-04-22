@@ -1,5 +1,6 @@
 import os
 
+import torch
 from torch.utils.data import Dataset
 import numpy as np
 import os
@@ -47,7 +48,7 @@ class BCDataset(Dataset):
     def __getitem__(self, index):
         state = self.states[index]
         target = self.targets[index]
-        return state, target
+        return state.float() / 255.0, target
     
     def _load_state_action_pair_traj(self, trajectory_file, stateskip=1, offset=0):
         """
