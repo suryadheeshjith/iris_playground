@@ -97,11 +97,9 @@ class Trainer:
         else:
             self.optimizer_actor_critic = torch.optim.Adam(self.agent.actor_critic.parameters(), lr=cfg.training.learning_rate)
 
-        if cfg.initialization.path_to_checkpoint is not None:
+        if cfg.training.load_bc_agent or cfg.initialization.path_to_checkpoint is not None:
             self.agent.load(**cfg.initialization, device=self.device)
-        
-        if cfg.training.load_bc_agent:
-            self.agent.actor_critic.load_state_dict(torch.load(cfg.training.path_to_bc_agent, map_location=self.device))
+            print("Successfully loaded model weights!")
 
         if cfg.common.resume:
             self.load_checkpoint()

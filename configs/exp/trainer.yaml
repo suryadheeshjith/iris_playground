@@ -10,11 +10,11 @@ defaults:
 env:
   train:
     _target_: envs.make_atari_ram # envs.make_atari, envs.make_atari_ram
-    id: Breakout-ramNoFrameskip-v4 # BreakoutNoFrameskip-v4, Breakout-ramNoFrameskip-v4, AssaultNoFrameskip-v4, Assault-ramNoFrameskip-v4
+    id: null # BreakoutNoFrameskip-v4, Breakout-ramNoFrameskip-v4, AssaultNoFrameskip-v4, Assault-ramNoFrameskip-v4
 
 datasets:
   bc:
-    env_name: BreakoutNoFrameskip-v4 # Do not use the ram version here since the folders are saved this way
+    env_name: null # BreakoutNoFrameskip-v4 # Do not use the ram version here since the folders are saved this way
 
 bc_datapath: /scratch/lvb243/ddrl-project/bc_generator/trajectories
 
@@ -69,8 +69,8 @@ collection:
 
 
 bc:
-  should: True
-  epochs: 1000
+  should: False
+  epochs: 50000
   learning_rate: 0.0001
   actor_critic:
     batch_num_samples: ${training.actor_critic.batch_num_samples}
@@ -84,7 +84,6 @@ bc:
 training:
   should: True
   load_bc_agent: False # Change
-  bc_agent_path: null # Change
   learning_rate: 0.0001
   tokenizer:
     batch_num_samples: 256
