@@ -177,7 +177,7 @@ class ActorCriticRAM(nn.Module):
         self.lstm = nn.LSTMCell(128, self.lstm_dim) # 128 was 1024
         self.hx, self.cx = None, None
 
-        self.critic_linear = nn.Linear(64, 1)
+        self.critic_linear = nn.Linear(64, 1) # another challenge if we want to pretrain critic
         self.actor_linear = nn.Linear(64, act_vocab_size)
 
         self.is_ram = is_ram
@@ -242,6 +242,24 @@ class ActorCriticRAM(nn.Module):
         loss_values = F.mse_loss(values, lambda_returns)
 
         return LossWithIntermediateLosses(loss_actions=loss_actions, loss_values=loss_values, loss_entropy=loss_entropy)
+    
+
+    ## BC loop should be:
+    # for epoch in range(epochs):
+    # for batch in dataloader:
+    # load shuffled batch of obs - action pairs
+    # compute predicted output based on obs
+    # compute loss between predicted output and action
+    # backpropagate loss
+    # Notes: don't actually need to interact with environment OR imagined environment
+    # Difficulty: How do we deal with the LSTM?
+    def compute_bc_loss(self, batch: Batch, tokenizer: Tokenizer, world_model: WorldModel, imagine_horizon: int, gamma: float, lambda_: float, entropy_weight: float, **kwargs: Any) -> LossWithIntermediateLosses:
+        assert not self.use_original_obs
+
+        outputs = self.compute_bc_outputs(batch, tokenizer, world_model, imagine_horizon)
+
+        ### Compute BC loss
+
 
     def imagine(self, batch: Batch, tokenizer: Tokenizer, world_model: WorldModel, horizon: int, show_pbar: bool = False) -> ImagineOutput:
         assert not self.use_original_obs

@@ -85,6 +85,9 @@ class Trainer:
             test_env = create_env(cfg.env.test, cfg.collection.test.num_envs)
             self.test_dataset = instantiate(cfg.datasets.test)
             self.test_collector = Collector(test_env, self.test_dataset, episode_manager_test, self.is_ram)
+        
+        if self.cfg.bc.should:
+            self.bc_dataset = instantiate(cfg.datasets.bc) ## Implement
 
         assert self.cfg.training.should or self.cfg.evaluation.should
         env = train_env if self.cfg.training.should else test_env
@@ -109,28 +112,43 @@ class Trainer:
 
     def run(self) -> None:
 
-        for epoch in range(self.start_epoch, 1 + self.cfg.common.epochs):
+        if self.bc: 
+          for epoch in range(self.bc_epochs):
+              logging.info(f"\nEpoch {epoch} / {self.bc_epochs}\n")
+              start_time = time.time()
+              to_log = []
 
-            logging.info(f"\nEpoch {epoch} / {self.cfg.common.epochs}\n")
-            start_time = time.time()
-            to_log = []
+              to_log += self.train_agent_bc(epoch)
+              to_log += self.eval_agent_bc(epoch)
 
-            if self.cfg.training.should:
-                if epoch <= self.cfg.collection.train.stop_after_epochs:
-                    to_log += self.train_collector.collect(self.agent, epoch, **self.cfg.collection.train.config)
-                to_log += self.train_agent(epoch)
+              if self.cfg.bc.should: # how does this should thing work?
+                  self.save_checkpoint(epoch, save_agent_only=not self.cfg.common.do_checkpoint)
+              
+              to_log.append({'duration': (time.time() - start_time) / 3600})
+              for metrics in to_log:
+                  wandb.log({'epoch': epoch, **metrics})
+        else:
+          for epoch in range(self.start_epoch, 1 + self.cfg.common.epochs):
+              logging.info(f"\nEpoch {epoch} / {self.cfg.common.epochs}\n")
+              start_time = time.time()
+              to_log = []
 
-            if self.cfg.evaluation.should and (epoch % self.cfg.evaluation.every == 0):
-                self.test_dataset.clear()
-                to_log += self.test_collector.collect(self.agent, epoch, **self.cfg.collection.test.config)
-                to_log += self.eval_agent(epoch)
+              if self.cfg.training.should:
+                  if epoch <= self.cfg.collection.train.stop_after_epochs:
+                      to_log += self.train_collector.collect(self.agent, epoch, **self.cfg.collection.train.config)
+                  to_log += self.train_agent(epoch)
 
-            if self.cfg.training.should:
-                self.save_checkpoint(epoch, save_agent_only=not self.cfg.common.do_checkpoint)
+              if self.cfg.evaluation.should and (epoch % self.cfg.evaluation.every == 0):
+                  self.test_dataset.clear()
+                  to_log += self.test_collector.collect(self.agent, epoch, **self.cfg.collection.test.config)
+                  to_log += self.eval_agent(epoch)
 
-            to_log.append({'duration': (time.time() - start_time) / 3600})
-            for metrics in to_log:
-                wandb.log({'epoch': epoch, **metrics})
+              if self.cfg.training.should:
+                  self.save_checkpoint(epoch, save_agent_only=not self.cfg.common.do_checkpoint)
+
+              to_log.append({'duration': (time.time() - start_time) / 3600})
+              for metrics in to_log:
+                  wandb.log({'epoch': epoch, **metrics})
 
         self.finish()
 
