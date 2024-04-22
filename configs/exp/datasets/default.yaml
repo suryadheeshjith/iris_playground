@@ -1,3 +1,7 @@
+bc:
+  _target: bc_dataset.BCDataset
+  main_folder: /Users/suryad/GitProjects/iris_playground/trajectories
+  env_name: ???
 train:
   _target_: dataset.EpisodesDatasetRamMonitoring
   max_ram_usage: 30G

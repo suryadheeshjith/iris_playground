@@ -12,6 +12,10 @@ env:
     _target_: envs.make_atari_ram # envs.make_atari, envs.make_atari_ram
     id: Breakout-ramNoFrameskip-v4 # BreakoutNoFrameskip-v4, Breakout-ramNoFrameskip-v4, AssaultNoFrameskip-v4, Assault-ramNoFrameskip-v4
 
+datasets:
+  bc:
+    env_name: {env.train.id}
+
 ### experiment args
 experiment: trainer
 output_dir: ${join_path:${hydra:sweep.dir},${hydra:sweep.subdir}}
@@ -65,8 +69,8 @@ collection:
 bc:
   should: True
   epochs: 20
+  learning_rate: 0.0001
   
-
 training:
   should: True
   load_bc_agent: False # Change

@@ -24,18 +24,6 @@ from utils import configure_optimizer, EpisodeDirManager, set_seed
 
 import logging
 
-
-####
-# TODO: 
-# * Understand world model and slicer.
-# * Create new world model class that takes the tokens from tokenizer and predicts next token instead of 
-#   using token indices and embedding them. See note on page 15 of paper.
-# * actor critic modularize - inheritance
-# * world_model_env check shapes if right 
-# * agent playing / reconstructions from state space environment. Maybe concurrently running envs?
-# * Understand actor-critic / shapes
-####
-
 class Trainer:
     def __init__(self, cfg: DictConfig) -> None:
         name = cfg.name + "//" + cfg.sub_name if hasattr(cfg, "sub_name") else ".LOCAL" + "//" + cfg.name
@@ -76,21 +64,23 @@ class Trainer:
             env_fn = partial(instantiate, config=cfg_env)
             return MultiProcessEnv(env_fn, num_envs, should_wait_num_envs_ratio=1.0) if num_envs > 1 else SingleProcessEnv(env_fn)
 
-        if self.cfg.training.should:
-            train_env = create_env(cfg.env.train, cfg.collection.train.num_envs)
-            self.train_dataset = instantiate(cfg.datasets.train)
-            self.train_collector = Collector(train_env, self.train_dataset, episode_manager_train, self.is_ram)
-
-        if self.cfg.evaluation.should:
-            test_env = create_env(cfg.env.test, cfg.collection.test.num_envs)
-            self.test_dataset = instantiate(cfg.datasets.test)
-            self.test_collector = Collector(test_env, self.test_dataset, episode_manager_test, self.is_ram)
-        
         if self.cfg.bc.should:
-            self.bc_dataset = instantiate(cfg.datasets.bc) ## Implement
+            self.bc_dataset = instantiate(cfg.datasets.bc)
+        
+        else:
+            if self.cfg.training.should:
+                train_env = create_env(cfg.env.train, cfg.collection.train.num_envs)
+                self.train_dataset = instantiate(cfg.datasets.train)
+                self.train_collector = Collector(train_env, self.train_dataset, episode_manager_train, self.is_ram)
 
-        assert self.cfg.training.should or self.cfg.evaluation.should
-        env = train_env if self.cfg.training.should else test_env
+            if self.cfg.evaluation.should:
+                test_env = create_env(cfg.env.test, cfg.collection.test.num_envs)
+                self.test_dataset = instantiate(cfg.datasets.test)
+                self.test_collector = Collector(test_env, self.test_dataset, episode_manager_test, self.is_ram)
+            
+            assert self.cfg.training.should or self.cfg.evaluation.should
+
+            env = train_env if self.cfg.training.should else test_env
 
         tokenizer = instantiate(cfg.tokenizer)
         world_model = WorldModel(obs_vocab_size=tokenizer.vocab_size, act_vocab_size=env.num_actions, config=instantiate(cfg.world_model))
@@ -102,10 +92,17 @@ class Trainer:
 
         self.optimizer_tokenizer = torch.optim.Adam(self.agent.tokenizer.parameters(), lr=cfg.training.learning_rate)
         self.optimizer_world_model = configure_optimizer(self.agent.world_model, cfg.training.learning_rate, cfg.training.world_model.weight_decay)
-        self.optimizer_actor_critic = torch.optim.Adam(self.agent.actor_critic.parameters(), lr=cfg.training.learning_rate)
+        
+        if self.cfg.bc.should: 
+            self.bc_optimizer_actor_critic = torch.optim.Adam(self.agent.actor_critic.parameters(), lr=cfg.bc.learning_rate)
+        else:
+            self.optimizer_actor_critic = torch.optim.Adam(self.agent.actor_critic.parameters(), lr=cfg.training.learning_rate)
 
         if cfg.initialization.path_to_checkpoint is not None:
             self.agent.load(**cfg.initialization, device=self.device)
+        
+        if cfg.training.load_bc_agent:
+            self.agent.actor_critic.load_state_dict(torch.load(cfg.training.path_to_bc_agent, map_location=self.device))
 
         if cfg.common.resume:
             self.load_checkpoint()
@@ -126,10 +123,7 @@ class Trainer:
                 to_log.append({'duration': (time.time() - start_time) / 3600})
                 for metrics in to_log:
                     wandb.log({'epoch': epoch, **metrics})
-        else:
-          if self.cfg.training.load_bc_agent:
-                self.agent.load(self.cfg.training.bc_agent_path, device=self.device)
-              
+        else:              
           for epoch in range(self.start_epoch, 1 + self.cfg.common.epochs):
               logging.info(f"\nEpoch {epoch} / {self.cfg.common.epochs}\n")
               start_time = time.time()
