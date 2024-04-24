@@ -7,6 +7,29 @@ comp="compute=local"
 # GO BOTTOM TO TOP
 
 # local train
+
+###### 
+# Image Space
+###### 
+
+
+### Breakout
+# img train
+# ./.python-greene submitit_hydra.py $comp exp=trainer_img name="$(date +%F)-trainer_test_img_breakout" env.train.id=BreakoutNoFrameskip-v4 wandb.mode=disabled
+
+# BC train
+./.python-greene submitit_hydra.py $comp exp=trainer_img name="$(date +%F)-trainer_test_img_breakout_bc_train" bc.should=True env.train.id=BreakoutNoFrameskip-v4 datasets.bc.env_name=BreakoutNoFrameskip-v4 wandb.mode=disabled
+
+# BC initialized img train
+# ./.python-greene submitit_hydra.py $comp exp=trainer_img name="$(date +%F)-trainer_test_img_breakout_bc_loaded" training.load_bc_agent=True initialization.path_to_checkpoint='' initialization.load_actor_critic=True env.train.id=BreakoutNoFrameskip-v4 wandb.mode=disabled 
+
+
+
+
+###### 
+# State Space
+###### 
+
 ### Breakout
 # State space train
 # ./.python-greene submitit_hydra.py $comp exp=trainer name="$(date +%F)-trainer_test_breakout_bc_loaded" env.train.id=Breakout-ramNoFrameskip-v4 wandb.mode=disabled
@@ -24,7 +47,7 @@ comp="compute=local"
 
 ### Ms Pacman
 # State space train
-./.python-greene submitit_hydra.py $comp exp=trainer name="$(date +%F)-trainer_test_breakout_bc_loaded" env.train.id=MsPacman-ramNoFrameskip-v4 wandb.mode=disabled
+# ./.python-greene submitit_hydra.py $comp exp=trainer name="$(date +%F)-trainer_test_breakout_bc_loaded" env.train.id=MsPacman-ramNoFrameskip-v4 wandb.mode=disabled
 
 
 # local eval - will not work

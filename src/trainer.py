@@ -24,6 +24,9 @@ from utils import configure_optimizer, EpisodeDirManager, set_seed
 
 import logging
 
+import ssl
+ssl._create_default_https_context = ssl._create_unverified_context
+
 class Trainer:
     def __init__(self, cfg: DictConfig) -> None:
         name = cfg.name + "//" + cfg.sub_name if hasattr(cfg, "sub_name") else ".LOCAL" + "//" + cfg.name
@@ -65,7 +68,8 @@ class Trainer:
             return MultiProcessEnv(env_fn, num_envs, should_wait_num_envs_ratio=1.0) if num_envs > 1 else SingleProcessEnv(env_fn)
 
         if self.cfg.bc.should:
-            self.bc_dataset = instantiate(cfg.datasets.bc, main_folder=cfg.bc_datapath)
+            self.train_bc_dataset = instantiate(cfg.datasets.bc, train=True, is_ram=self.is_ram, main_folder=cfg.bc_datapath)
+            self.test_bc_dataset = instantiate(cfg.datasets.bc, train=False, is_ram=self.is_ram, main_folder=cfg.bc_datapath)
         
         if self.cfg.training.should:
             train_env = create_env(cfg.env.train, cfg.collection.train.num_envs)
@@ -167,7 +171,8 @@ class Trainer:
         for _ in tqdm(range(steps_per_epoch), desc=f"Training {str(component)}", file=sys.stdout):
             optimizer.zero_grad()
             for _ in range(grad_acc_steps):
-                batch = self.bc_dataset.sample_batch(batch_num_samples)
+                batch = self.train_bc_dataset.sample_batch(batch_num_samples)
+                print(batch['observations'].shape)
                 assert batch['observations'].shape[1] == sequence_length
                 batch = self._to_device(batch)
 

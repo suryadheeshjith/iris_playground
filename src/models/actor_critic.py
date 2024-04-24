@@ -66,9 +66,12 @@ class ActorCritic(nn.Module):
         self.hx = torch.zeros(n, self.lstm_dim, device=device)
         self.cx = torch.zeros(n, self.lstm_dim, device=device)
         if burnin_observations is not None:
-            assert burnin_observations.ndim == 5 and burnin_observations.size(0) == n and mask_padding is not None and burnin_observations.shape[:2] == mask_padding.shape
+            # assert burnin_observations.ndim == 5 and burnin_observations.size(0) == n and mask_padding is not None and burnin_observations.shape[:2] == mask_padding.shape
             for i in range(burnin_observations.size(1)):
-                if mask_padding[:, i].any():
+                if mask_padding is None:
+                    with torch.no_grad():
+                        self(burnin_observations[:, i], None)
+                elif mask_padding[:, i].any():
                     with torch.no_grad():
                         self(burnin_observations[:, i], mask_padding[:, i])
 
@@ -121,7 +124,20 @@ class ActorCritic(nn.Module):
         loss_values = F.mse_loss(values, lambda_returns)
 
         return LossWithIntermediateLosses(loss_actions=loss_actions, loss_values=loss_values, loss_entropy=loss_entropy)
+   
+    def compute_bc_loss(self, batch: Batch) -> LossWithIntermediateLosses:
+        initial_observations, expert_actions = batch['observations'], batch['actions']
+        burnin_observations = initial_observations[:, :-1]
+        actual_observation = initial_observations[:, -1]
+        self.reset(n=initial_observations.size(0), burnin_observations=burnin_observations, mask_padding=None)
 
+        outputs_ac = self(actual_observation) # logits_actions: B, 1, num_actions
+        pred_actions = torch.argmax(outputs_ac.logits_actions, dim=-1)
+        acc = (pred_actions == expert_actions).float().mean()
+        d = Categorical(logits=outputs_ac.logits_actions)
+        actor_loss = - d.log_prob(expert_actions).sum(-1).mean()
+        return actor_loss, acc
+    
     def imagine(self, batch: Batch, tokenizer: Tokenizer, world_model: WorldModel, horizon: int, show_pbar: bool = False) -> ImagineOutput:
         assert not self.use_original_obs
         initial_observations = batch['observations']

@@ -1,20 +1,20 @@
 # @package _global_
 defaults:
   - _self_
-  - tokenizer: state_space # default, state_space
-  - world_model: state_space # default, state_space
-  - actor_critic: state_space # default, state_space
-  - env: state_space # default, state_space
+  - tokenizer: default
+  - world_model: default
+  - actor_critic: default
+  - env: default
   - datasets: default
 
 env:
   train:
-    _target_: envs.make_atari_ram # envs.make_atari, envs.make_atari_ram
-    id: null # BreakoutNoFrameskip-v4, Breakout-ramNoFrameskip-v4, AssaultNoFrameskip-v4, Assault-ramNoFrameskip-v4
+    _target_: envs.make_atari
+    id: null # BreakoutNoFrameskip-v4, AssaultNoFrameskip-v4
 
 datasets:
   bc:
-    env_name: null # BreakoutNoFrameskip-v4 # Do not use the ram version here since the folders are saved this way
+    env_name: null
 
 bc_datapath: /scratch/lvb243/ddrl-project/rl-baselines3-zoo/bc_data
 
