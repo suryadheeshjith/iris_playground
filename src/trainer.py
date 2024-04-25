@@ -191,8 +191,33 @@ class Trainer:
         return [{'epoch': epoch, **metrics_actor_critic}]
 
     def bc_eval_actor_critic(self, epoch: int):
-        # TODO
-        return []
+        self.agent.eval()
+
+        metrics_actor_critic_eval = {}
+
+        cfg_actor_critic = self.cfg.bc.actor_critic
+        batch_num_samples = cfg_actor_critic.batch_num_samples
+        sequence_length = cfg_actor_critic.burn_in + 1
+
+        loss_total_eval = 0.0
+        accuracy_total_eval = 0.0
+
+        for _ in tqdm(range(cfg_actor_critic.steps_per_epoch), desc=f"Evaluating {str(self.agent.actor_critic)}", file=sys.stdout):
+            batch = self.test_bc_dataset.sample_batch(batch_num_samples)
+            assert batch['observations'].shape[1] == sequence_length
+            batch = self._to_device(batch)
+
+            loss, acc = self.agent.actor_critic.compute_bc_loss(batch)
+            loss_total_eval += loss.item()
+            accuracy_total_eval += acc
+        
+        loss_total_eval /= cfg_actor_critic.steps_per_epoch
+        accuracy_total_eval /= cfg_actor_critic.steps_per_epoch
+        
+        metrics_actor_critic_eval = {f'{str(self.agent.actor_critic)}/eval/bc_loss': loss_total_eval, f'{str(self.agent.actor_critic)}/eval/accuracy': accuracy_total_eval}
+
+        return [{'epoch': epoch, **metrics_actor_critic_eval}]
+        
 
     def train_agent(self, epoch: int) -> None:
         self.agent.train()
