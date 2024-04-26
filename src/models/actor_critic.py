@@ -138,10 +138,11 @@ class ActorCritic(nn.Module):
         actor_loss = - d.log_prob(expert_actions).sum(-1).mean()
         return actor_loss, acc
     
-    def trajectory(self, obs, test_env):
-        self.reset(n=obs.size(0), burnin_observations=None, mask_padding=None)
-        
+    def trajectory(self, test_env):
         obs = test_env.reset()
+
+        self.reset(n=obs.size(0), burnin_observations=None, mask_padding=None)
+
         done = False
         episode_rewards = []
         episode_env_reward = 0.0

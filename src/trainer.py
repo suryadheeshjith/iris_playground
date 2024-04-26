@@ -70,6 +70,7 @@ class Trainer:
         if self.cfg.bc.should:
             self.train_bc_dataset = instantiate(cfg.datasets.bc, train=True, is_ram=self.is_ram, main_folder=cfg.bc_datapath)
             self.test_bc_dataset = instantiate(cfg.datasets.bc, train=False, is_ram=self.is_ram, main_folder=cfg.bc_datapath)
+            self.bc_env = create_env(cfg.env.test, 1)
         
         if self.cfg.training.should:
             train_env = create_env(cfg.env.train, cfg.collection.train.num_envs)
@@ -84,6 +85,8 @@ class Trainer:
         assert self.cfg.bc.should or (self.cfg.training.should or self.cfg.evaluation.should)
 
         env = train_env if self.cfg.training.should else test_env
+
+
 
         tokenizer = instantiate(cfg.tokenizer)
         world_model = WorldModel(obs_vocab_size=tokenizer.vocab_size, act_vocab_size=env.num_actions, config=instantiate(cfg.world_model))
@@ -232,7 +235,7 @@ class Trainer:
         episode_rewards = []
         
         for _ in range(num_eval_trajectories):
-            episode_env_reward, episode_length, episode_reward = self.agent.actor_critic.trajectory(self.test_env)
+            episode_env_reward, episode_length, episode_reward = self.agent.actor_critic.trajectory(self.bc_env)
             episode_lengths.append(episode_length)
             episode_rewards.append(episode_env_reward)
             print(f"Episode reward: {episode_reward}")
