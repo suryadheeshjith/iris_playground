@@ -119,6 +119,7 @@ class Trainer:
                 to_log += self.bc_train_actor_critic(epoch)
                 self.agent.actor_critic.eval()
                 to_log += self.bc_eval_actor_critic(epoch)
+                to_log += self.bc_eval_trajectory(epoch)
 
                 self.save_checkpoint(epoch, save_agent_only=True)
                 
@@ -218,6 +219,30 @@ class Trainer:
         metrics_actor_critic_eval = {f'{str(self.agent.actor_critic)}/eval/bc_loss': loss_total_eval, f'{str(self.agent.actor_critic)}/eval/accuracy': accuracy_total_eval}
 
         return [{'epoch': epoch, **metrics_actor_critic_eval}]
+    
+    def bc_eval_trajectory(self, epoch: int):
+        self.agent.eval()
+
+        metrics_actor_critic_eval_trajectory = {}
+
+        cfg_actor_critic = self.cfg.bc.actor_critic
+        num_eval_trajectories = cfg_actor_critic.num_eval_trajectories
+
+        episode_lengths = []
+        episode_rewards = []
+        
+        for _ in range(num_eval_trajectories):
+            episode_env_reward, episode_length, episode_reward = self.agent.actor_critic.trajectory(self.test_env)
+            episode_lengths.append(episode_length)
+            episode_rewards.append(episode_env_reward)
+            print(f"Episode reward: {episode_reward}")
+        
+        avg_episode_length = sum(episode_lengths) / num_eval_trajectories
+        avg_episode_reward = sum(episode_rewards) / num_eval_trajectories
+        
+        metrics_actor_critic_eval_trajectory = {f'{str(self.agent.actor_critic)}/eval/episode_length': avg_episode_length, f'{str(self.agent.actor_critic)}/eval/episode_reward': avg_episode_reward}
+
+        return [{'epoch': epoch, **metrics_actor_critic_eval_trajectory}]
         
 
     def train_agent(self, epoch: int) -> None:

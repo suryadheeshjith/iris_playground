@@ -138,6 +138,27 @@ class ActorCritic(nn.Module):
         actor_loss = - d.log_prob(expert_actions).sum(-1).mean()
         return actor_loss, acc
     
+    def trajectory(self, obs, test_env):
+        self.reset(n=obs.size(0), burnin_observations=None, mask_padding=None)
+        
+        obs = test_env.reset()
+        done = False
+        episode_rewards = []
+        episode_env_reward = 0.0
+        episode_length = 0
+        
+        while not done:
+            outputs_ac = self(obs)
+            action_token = Categorical(logits=outputs_ac.logits_actions).sample()
+            obs, reward, done, info = test_env.step(action_token)
+            episode_env_reward += reward
+            episode_length += 1
+
+            if 'episode' in info.keys():
+                episode_rewards.append(info['episode']['r'])
+            
+        return episode_env_reward, episode_rewards, episode_length
+
     def imagine(self, batch: Batch, tokenizer: Tokenizer, world_model: WorldModel, horizon: int, show_pbar: bool = False) -> ImagineOutput:
         assert not self.use_original_obs
         initial_observations = batch['observations']

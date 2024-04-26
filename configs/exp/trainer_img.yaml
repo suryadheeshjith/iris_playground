@@ -109,6 +109,7 @@ training:
     gamma: 0.995
     lambda_: 0.95
     entropy_weight: 0.001
+    num_eval_trajectories: 10
 
 evaluation:
   should: True

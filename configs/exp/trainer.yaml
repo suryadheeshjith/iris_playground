@@ -80,6 +80,7 @@ bc:
     steps_per_epoch: ${training.actor_critic.steps_per_epoch}
     gamma: ${training.actor_critic.gamma}
     lambda_: ${training.actor_critic.lambda_}
+    num_eval_trajectories: ${training.actor_critic.num_eval_trajectories}
 
 training:
   should: True
