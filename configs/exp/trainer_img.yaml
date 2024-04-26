@@ -16,7 +16,7 @@ datasets:
   bc:
     env_name: null
 
-bc_datapath: /scratch/lvb243/ddrl-project/rl-baselines3-zoo/bc_data
+bc_datapath: /scratch/lvb243/ddrl-project/Video-Diffusion-Models/saved_npy
 
 ### experiment args
 experiment: trainer

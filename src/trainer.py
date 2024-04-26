@@ -125,6 +125,7 @@ class Trainer:
                 to_log.append({'duration': (time.time() - start_time) / 3600})
                 for metrics in to_log:
                     wandb.log({'epoch': epoch, **metrics})
+                    print({'epoch': epoch, **metrics})
         else:              
           for epoch in range(self.start_epoch, 1 + self.cfg.common.epochs):
               logging.info(f"\nEpoch {epoch} / {self.cfg.common.epochs}\n")
@@ -147,6 +148,7 @@ class Trainer:
               to_log.append({'duration': (time.time() - start_time) / 3600})
               for metrics in to_log:
                   wandb.log({'epoch': epoch, **metrics})
+                  print({'epoch': epoch, **metrics})
 
         self.finish()
 
@@ -172,7 +174,6 @@ class Trainer:
             optimizer.zero_grad()
             for _ in range(grad_acc_steps):
                 batch = self.train_bc_dataset.sample_batch(batch_num_samples)
-                print(batch['observations'].shape)
                 assert batch['observations'].shape[1] == sequence_length
                 batch = self._to_device(batch)
 
