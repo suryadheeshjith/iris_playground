@@ -16,7 +16,7 @@ datasets:
   bc:
     env_name: null
 
-bc_datapath: /scratch/lvb243/ddrl-project/Video-Diffusion-Models/saved_npy
+bc_datapath: /scratch/lvb243/ddrl-project/Video-Diffusion-Models/.LOCAL/save_with_atariari/2024-04-26-breakout_400k/saved_npy #/scratch/lvb243/ddrl-project/Video-Diffusion-Models/saved_npy
 
 ### experiment args
 experiment: trainer
@@ -80,6 +80,7 @@ bc:
     steps_per_epoch: ${training.actor_critic.steps_per_epoch}
     gamma: ${training.actor_critic.gamma}
     lambda_: ${training.actor_critic.lambda_}
+    num_eval_trajectories: 3
 
 training:
   should: True
@@ -109,7 +110,6 @@ training:
     gamma: 0.995
     lambda_: 0.95
     entropy_weight: 0.001
-    num_eval_trajectories: 10
 
 evaluation:
   should: True

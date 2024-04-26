@@ -18,7 +18,7 @@ comp="compute=local"
 # ./.python-greene submitit_hydra.py $comp exp=trainer_img name="$(date +%F)-trainer_test_img_breakout" env.train.id=BreakoutNoFrameskip-v4 wandb.mode=disabled
 
 # BC train
-./.python-greene submitit_hydra.py $comp exp=trainer_img name="$(date +%F)-trainer_test_img_breakout_bc_train" bc.should=True env.train.id=BreakoutNoFrameskip-v4 datasets.bc.env_name=BreakoutNoFrameskip-v4 wandb.mode=disabled
+./.python-greene submitit_hydra.py $comp exp=trainer_img name="$(date +%F)-trainer_test_img_breakout_bc_train_400k" bc.should=True env.train.id=BreakoutNoFrameskip-v4 datasets.bc.env_name=BreakoutNoFrameskip-v4 wandb.mode=disabled
 
 # BC initialized img train
 # ./.python-greene submitit_hydra.py $comp exp=trainer_img name="$(date +%F)-trainer_test_img_breakout_bc_loaded" training.load_bc_agent=True initialization.path_to_checkpoint='' initialization.load_actor_critic=True env.train.id=BreakoutNoFrameskip-v4 wandb.mode=disabled 

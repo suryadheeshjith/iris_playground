@@ -13,6 +13,7 @@ import torch
 import torch.nn as nn
 from tqdm import tqdm
 import wandb
+import numpy as np
 
 from agent import Agent
 from collector import Collector
@@ -20,7 +21,7 @@ from envs import SingleProcessEnv, MultiProcessEnv
 from episode import Episode
 from make_reconstructions import make_reconstructions_from_batch
 from models.world_model import WorldModel
-from utils import configure_optimizer, EpisodeDirManager, set_seed
+from utils import configure_optimizer, EpisodeDirManager, set_seed, make_video
 
 import logging
 
@@ -174,18 +175,19 @@ class Trainer:
         loss_total_epoch = 0.0
         accuracy_total_epoch = 0.0
 
-        for _ in tqdm(range(steps_per_epoch), desc=f"Training {str(component)}", file=sys.stdout):
+        # for _ in tqdm(range(steps_per_epoch), desc=f"Training {str(component)}", file=sys.stdout):
+        self.train_bc_dataset.start_epoch(batch_num_samples)
+        num_iters = len(self.train_bc_dataset) // batch_num_samples
+        for i in tqdm(range(num_iters)):
             optimizer.zero_grad()
-            for _ in range(grad_acc_steps):
-                batch = self.train_bc_dataset.sample_batch(batch_num_samples)
-                assert batch['observations'].shape[1] == sequence_length
-                batch = self._to_device(batch)
+            batch = self.train_bc_dataset.sample_batch(i)
+            assert batch['observations'].shape[1] == sequence_length
+            batch = self._to_device(batch)
 
-                loss, acc = component.compute_bc_loss(batch)
-                loss = loss / grad_acc_steps
-                loss.backward()
-                loss_total_epoch += loss.item() / steps_per_epoch
-                accuracy_total_epoch += acc / steps_per_epoch
+            loss, acc = component.compute_bc_loss(batch)
+            loss.backward()
+            loss_total_epoch += loss.item() / num_iters
+            accuracy_total_epoch += acc / num_iters
 
             if max_grad_norm is not None:
                 torch.nn.utils.clip_grad_norm_(self.agent.actor_critic.parameters(), max_grad_norm)
@@ -207,8 +209,10 @@ class Trainer:
         loss_total_eval = 0.0
         accuracy_total_eval = 0.0
 
-        for _ in tqdm(range(cfg_actor_critic.steps_per_epoch), desc=f"Evaluating {str(self.agent.actor_critic)}", file=sys.stdout):
-            batch = self.test_bc_dataset.sample_batch(batch_num_samples)
+        num_iters = len(self.test_bc_dataset) // batch_num_samples
+        self.test_bc_dataset.start_epoch(batch_num_samples)
+        for i in tqdm(range(num_iters), desc=f"Evaluating {str(self.agent.actor_critic)}", file=sys.stdout):
+            batch = self.test_bc_dataset.sample_batch(i)
             assert batch['observations'].shape[1] == sequence_length
             batch = self._to_device(batch)
 
@@ -216,8 +220,8 @@ class Trainer:
             loss_total_eval += loss.item()
             accuracy_total_eval += acc
         
-        loss_total_eval /= cfg_actor_critic.steps_per_epoch
-        accuracy_total_eval /= cfg_actor_critic.steps_per_epoch
+        loss_total_eval /= num_iters
+        accuracy_total_eval /= num_iters
         
         metrics_actor_critic_eval = {f'{str(self.agent.actor_critic)}/eval/bc_loss': loss_total_eval, f'{str(self.agent.actor_critic)}/eval/accuracy': accuracy_total_eval}
 
@@ -234,16 +238,17 @@ class Trainer:
         episode_lengths = []
         episode_rewards = []
         
-        for _ in range(num_eval_trajectories):
-            episode_env_reward, episode_length, episode_reward = self.agent.actor_critic.trajectory(self.bc_env)
+        for _ in tqdm(range(num_eval_trajectories), desc=f"Creating Trajectories"):
+            episode_env_reward, episode_length, obs_list = self.agent.actor_critic.trajectory(self.bc_env)
             episode_lengths.append(episode_length)
             episode_rewards.append(episode_env_reward)
-            print(f"Episode reward: {episode_reward}")
+        
+        self.save_mp4_recording(epoch, torch.tensor(np.array(obs_list)).squeeze(1))
         
         avg_episode_length = sum(episode_lengths) / num_eval_trajectories
         avg_episode_reward = sum(episode_rewards) / num_eval_trajectories
         
-        metrics_actor_critic_eval_trajectory = {f'{str(self.agent.actor_critic)}/eval/episode_length': avg_episode_length, f'{str(self.agent.actor_critic)}/eval/episode_reward': avg_episode_reward}
+        metrics_actor_critic_eval_trajectory = {f'{str(self.agent.actor_critic)}/eval/avg_episode_length': avg_episode_length, f'{str(self.agent.actor_critic)}/eval/avg_episode_reward': avg_episode_reward}
 
         return [{'epoch': epoch, **metrics_actor_critic_eval_trajectory}]
         
@@ -381,7 +386,7 @@ class Trainer:
                 torch.save(self.test_dataset.num_seen_episodes, self.ckpt_dir / 'num_seen_episodes_test_dataset.pt')
     
     def save_checkpoint(self, epoch: int, save_agent_only: bool) -> None:
-        tmp_checkpoint_dir = Path('checkpoints_tmp')
+        tmp_checkpoint_dir = self.ckpt_dir / Path('checkpoints_tmp')
         shutil.copytree(src=self.ckpt_dir, dst=tmp_checkpoint_dir, ignore=shutil.ignore_patterns('dataset'))
         self._save_checkpoint(epoch, save_agent_only)
         shutil.rmtree(tmp_checkpoint_dir)
@@ -398,6 +403,10 @@ class Trainer:
         if self.cfg.evaluation.should:
             self.test_dataset.num_seen_episodes = torch.load(self.ckpt_dir / 'num_seen_episodes_test_dataset.pt')
         logging.info(f'Successfully loaded model, optimizer and {len(self.train_dataset)} episodes from {self.ckpt_dir.absolute()}.')
+
+    def save_mp4_recording(self, epoch, frames):
+        make_video(self.media_dir / f'{epoch}.mp4', fps=15, frames=frames)
+        print(f'Saved trajectory at epoch {epoch}.')
 
     def _to_device(self, batch: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
         return {k: batch[k].to(self.device) for k in batch}

@@ -49,8 +49,15 @@ class BCDataset(Dataset):
     def __len__(self):
         return len(self.states)
 
-    def sample_batch(self, batch_num_samples: int):
-        indices = random.sample(range(len(self.states)), batch_num_samples)
+    def start_epoch(self, batch_size):
+        size = len(self.states) // batch_size * batch_size
+        ls = torch.randperm(size)
+        self.random_indices_list = ls.reshape(-1, batch_size)
+        assert self.random_indices_list.shape[0] == len(self.states) // batch_size
+
+    def sample_batch(self, idx: int):
+        # indices = random.sample(range(len(self.states)), batch_num_samples)
+        indices = self.random_indices_list[idx]
         states = torch.stack([torch.tensor(self.states[i]) for i in indices])
         targets = torch.stack([torch.tensor(self.targets[i]) for i in indices])
         batch = {'observations': states / 255.0, 'actions': targets}    

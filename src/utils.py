@@ -150,5 +150,6 @@ def make_video(fname, fps, frames):
 
     video = cv2.VideoWriter(str(fname), cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))
     for frame in frames:
-        video.write(frame[:, :, ::-1])
+        # video.write(frame[:, :, ::-1])
+        video.write(np.uint8(frame.flip(dims=(-1,)).cpu().numpy()))
     video.release()
