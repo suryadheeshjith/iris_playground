@@ -62,11 +62,12 @@ class ActorCritic(nn.Module):
         self.hx, self.cx = None, None
 
     def reset(self, n: int, burnin_observations: Optional[torch.Tensor] = None, mask_padding: Optional[torch.Tensor] = None) -> None:
+        # n is number of environments/batch size
         device = self.conv1.weight.device
         self.hx = torch.zeros(n, self.lstm_dim, device=device)
         self.cx = torch.zeros(n, self.lstm_dim, device=device)
         if burnin_observations is not None:
-            # assert burnin_observations.ndim == 5 and burnin_observations.size(0) == n and mask_padding is not None and burnin_observations.shape[:2] == mask_padding.shape
+            assert burnin_observations.ndim == 5 and burnin_observations.size(0) == n
             for i in range(burnin_observations.size(1)):
                 if mask_padding is None:
                     with torch.no_grad():
@@ -125,7 +126,7 @@ class ActorCritic(nn.Module):
 
         return LossWithIntermediateLosses(loss_actions=loss_actions, loss_values=loss_values, loss_entropy=loss_entropy)
    
-    def compute_bc_loss(self, batch: Batch) -> LossWithIntermediateLosses:
+    def compute_bc_loss(self, batch: Batch):
         initial_observations, expert_actions = batch['observations'], batch['actions']
         burnin_observations = initial_observations[:, :-1]
         actual_observation = initial_observations[:, -1]
@@ -140,9 +141,12 @@ class ActorCritic(nn.Module):
         return actor_loss, acc
     
     def trajectory(self, test_env, max_steps=1000):
-        obs = test_env.reset()
+        obs = test_env.reset() # 1 x 64 x 64 x 3
 
-        self.reset(n=obs.shape[0], burnin_observations=None, mask_padding=None)
+        burnin_observations = torch.FloatTensor(obs).div(255).cuda()
+        burnin_observations = rearrange(burnin_observations, 'n h w c -> n c h w').unsqueeze(0)
+
+        self.reset(n=obs.shape[0], burnin_observations=burnin_observations, mask_padding=None)
 
         done = False
         episode_rewards = []

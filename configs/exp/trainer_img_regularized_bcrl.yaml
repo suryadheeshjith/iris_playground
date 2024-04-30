@@ -39,7 +39,7 @@ initialization:
   path_to_checkpoint: null
   load_tokenizer: False
   load_world_model: False
-  load_actor_critic: False
+  load_actor_critic: True
 
 common:
   epochs: 100
@@ -88,11 +88,11 @@ bc:
 
 training:
   should: True
-  should_regularize: False
+  should_regularize: True
   regularize_schedule: 'cosine' #'linear' 'exp' 'constant'
   base_bc_alpha: 0.9
   exp_gamma: 0.95
-  load_bc_agent: False # Change
+  load_bc_agent: True
   learning_rate: 0.0001
   tokenizer:
     batch_num_samples: 256

@@ -31,13 +31,24 @@ ssl._create_default_https_context = ssl._create_unverified_context
 class Trainer:
     def __init__(self, cfg: DictConfig) -> None:
         name = cfg.name + "//" + cfg.sub_name if hasattr(cfg, "sub_name") else ".LOCAL" + "//" + cfg.name
-        wandb.init(
-            config=OmegaConf.to_container(cfg, resolve=True),
-            reinit=True,
-            resume=True,
-            name = name,
-            **cfg.wandb
-        )
+
+        if cfg.common.resume:
+            wandb.init(
+                id=cfg.resume_id,
+                config=OmegaConf.to_container(cfg, resolve=True),
+                reinit=True,
+                resume="must",
+                name = name,
+                **cfg.wandb
+            )
+        else:
+            wandb.init(
+                config=OmegaConf.to_container(cfg, resolve=True),
+                reinit=True,
+                resume=True,
+                name = name,
+                **cfg.wandb
+            )
 
         if cfg.common.seed is not None:
             set_seed(cfg.common.seed)
@@ -47,11 +58,17 @@ class Trainer:
         self.device = torch.device(cfg.common.device)
         self.is_ram = cfg.env.train._target_ == "envs.make_atari_ram"
 
-        self.output_dir = Path(cfg.output_dir)
+        if not cfg.common.resume:
+            self.output_dir = Path(cfg.output_dir)
+        else:
+            self.output_dir = Path(cfg.continue_dir)
+        
         self.ckpt_dir = self.output_dir / 'checkpoints' if not cfg.bc.should else self.output_dir / 'bc_checkpoints'
         self.media_dir = self.output_dir / 'media'
         self.episode_dir = self.output_dir / 'episodes'
         self.reconstructions_dir = self.output_dir / 'reconstructions'
+
+        self.train_bc_dataset = None
 
         if not cfg.common.resume:
             recopy = '.LOCAL' in cfg.output_dir
@@ -68,10 +85,28 @@ class Trainer:
             env_fn = partial(instantiate, config=cfg_env)
             return MultiProcessEnv(env_fn, num_envs, should_wait_num_envs_ratio=1.0) if num_envs > 1 else SingleProcessEnv(env_fn)
 
-        if self.cfg.bc.should:
-            self.train_bc_dataset = instantiate(cfg.datasets.bc, train=True, is_ram=self.is_ram, main_folder=cfg.bc_datapath)
-            self.test_bc_dataset = instantiate(cfg.datasets.bc, train=False, is_ram=self.is_ram, main_folder=cfg.bc_datapath)
-            self.bc_env = create_env(cfg.env.test, 1)
+        if self.cfg.bc.should or self.cfg.training.should_regularize:
+            self.train_bc_dataset = instantiate(cfg.datasets.bc, train=True, is_ram=self.is_ram, main_folder=cfg.bc_datapath, is_full=cfg.is_full)
+            if self.cfg.bc.should:
+                self.test_bc_dataset = instantiate(cfg.datasets.bc, train=False, is_ram=self.is_ram, main_folder=cfg.bc_datapath, is_full=cfg.is_full)
+                self.bc_env = create_env(cfg.env.test, 1)
+
+                # import pdb; pdb.set_trace()
+                # from pathlib import Path
+                # parent_path = Path('/scratch/lvb243/ddrl-project/iris_playground/full_datasets') / f'{cfg.env.train.id}_150k_full' / 'saved_npy'
+                # # Train
+                # train_states_path = parent_path / 'train'
+                # train_states_path.mkdir(exist_ok=True, parents=True)
+                
+                # np.save(train_states_path / '0_frames.npy', self.train_bc_dataset.states)
+                # np.save(train_states_path / '0_actions.npy', self.train_bc_dataset.targets)
+
+                # # Val
+                # val_states_path = parent_path / 'val'
+                # val_states_path.mkdir(exist_ok=True, parents=True)
+                
+                # np.save(val_states_path / '0_frames.npy', self.test_bc_dataset.states)
+                # np.save(val_states_path / '0_actions.npy', self.test_bc_dataset.targets)
         
         if self.cfg.training.should:
             train_env = create_env(cfg.env.train, cfg.collection.train.num_envs)
@@ -101,13 +136,16 @@ class Trainer:
         self.optimizer_world_model = configure_optimizer(self.agent.world_model, cfg.training.learning_rate, cfg.training.world_model.weight_decay)
         
         if self.cfg.bc.should: 
-            self.bc_optimizer_actor_critic = torch.optim.Adam(self.agent.actor_critic.parameters(), lr=cfg.bc.learning_rate)
+            # self.bc_optimizer_actor_critic = torch.optim.Adam(self.agent.actor_critic.parameters(), lr=cfg.bc.learning_rate)
+            print(f"Using weight decay: {cfg.bc.weight_decay}")
+            self.bc_optimizer_actor_critic = torch.optim.AdamW(self.agent.actor_critic.parameters(), lr=cfg.bc.learning_rate, weight_decay=cfg.bc.weight_decay)
         else:
             self.optimizer_actor_critic = torch.optim.Adam(self.agent.actor_critic.parameters(), lr=cfg.training.learning_rate)
 
         if cfg.training.load_bc_agent or cfg.initialization.path_to_checkpoint is not None:
             self.agent.load(**cfg.initialization, device=self.device)
             print("Successfully loaded model weights!")
+            print(f"Loaded from: {cfg.initialization.path_to_checkpoint}")
 
         if cfg.common.resume:
             self.load_checkpoint()
@@ -125,7 +163,7 @@ class Trainer:
                 to_log += self.bc_eval_actor_critic(epoch)
                 to_log += self.bc_eval_trajectory(epoch)
 
-                self.save_checkpoint(epoch, save_agent_only=True)
+                self.save_checkpoint(epoch, save_agent_only=True, bc=True)
                 
                 to_log.append({'duration': (time.time() - start_time) / 3600})
                 for metrics in to_log:
@@ -264,21 +302,24 @@ class Trainer:
         cfg_actor_critic = self.cfg.training.actor_critic
 
         if epoch > cfg_tokenizer.start_after_epochs:
-            metrics_tokenizer = self.train_component(self.agent.tokenizer, self.optimizer_tokenizer, sequence_length=1, sample_from_start=True, **cfg_tokenizer)
+            metrics_tokenizer = self.train_component(epoch, self.agent.tokenizer, self.optimizer_tokenizer, sequence_length=1, sample_from_start=True, bc_dataset=None, **cfg_tokenizer)
         self.agent.tokenizer.eval()
 
         if epoch > cfg_world_model.start_after_epochs:
-            metrics_world_model = self.train_component(self.agent.world_model, self.optimizer_world_model, sequence_length=self.cfg.common.sequence_length, sample_from_start=True, tokenizer=self.agent.tokenizer, **cfg_world_model)
+            metrics_world_model = self.train_component(epoch, self.agent.world_model, self.optimizer_world_model, sequence_length=self.cfg.common.sequence_length, sample_from_start=True, bc_dataset=None, tokenizer=self.agent.tokenizer, **cfg_world_model)
         self.agent.world_model.eval()
 
         if epoch > cfg_actor_critic.start_after_epochs:
-            metrics_actor_critic = self.train_component(self.agent.actor_critic, self.optimizer_actor_critic, sequence_length=1 + self.cfg.training.actor_critic.burn_in, sample_from_start=False, tokenizer=self.agent.tokenizer, world_model=self.agent.world_model, **cfg_actor_critic)
+            metrics_actor_critic = self.train_component(epoch, self.agent.actor_critic, self.optimizer_actor_critic, sequence_length=1 + self.cfg.training.actor_critic.burn_in, sample_from_start=False, bc_dataset=self.train_bc_dataset, tokenizer=self.agent.tokenizer, world_model=self.agent.world_model, **cfg_actor_critic)
         self.agent.actor_critic.eval()
 
         return [{'epoch': epoch, **metrics_tokenizer, **metrics_world_model, **metrics_actor_critic}]
 
-    def train_component(self, component: nn.Module, optimizer: torch.optim.Optimizer, steps_per_epoch: int, batch_num_samples: int, grad_acc_steps: int, max_grad_norm: Optional[float], sequence_length: int, sample_from_start: bool, **kwargs_loss: Any) -> Dict[str, float]:
+    def train_component(self, epoch: int, component: nn.Module, optimizer: torch.optim.Optimizer, steps_per_epoch: int, batch_num_samples: int, grad_acc_steps: int, max_grad_norm: Optional[float], sequence_length: int, sample_from_start: bool, bc_dataset, **kwargs_loss: Any) -> Dict[str, float]:
         loss_total_epoch = 0.0
+        imagination_total_loss = 0.0
+        bc_total_loss = 0.0
+        avg_bc_acc = 0.0
         intermediate_losses = defaultdict(float)
 
         for _ in tqdm(range(steps_per_epoch), desc=f"Training {str(component)}", file=sys.stdout):
@@ -289,6 +330,22 @@ class Trainer:
 
                 losses = component.compute_loss(batch, **kwargs_loss) / grad_acc_steps
                 loss_total_step = losses.loss_total
+
+                if bc_dataset:
+                    assert self.cfg.training.should_regularize and str(component) == "actor_critic"
+                    bc_batch = bc_dataset.random_sample_batch(batch['observations'].shape[0])
+                    bc_batch = self._to_device(bc_batch)
+                    bc_loss, bc_acc = component.compute_bc_loss(bc_batch)
+                    bc_loss = bc_loss / grad_acc_steps
+                    alpha = self.bc_loss_scale(epoch)
+                    
+                    # For logs
+                    imagination_total_loss += loss_total_step / steps_per_epoch
+                    bc_total_loss += bc_loss / steps_per_epoch
+                    avg_bc_acc += bc_acc / steps_per_epoch / grad_acc_steps
+
+                    loss_total_step = (1-alpha)*loss_total_step + alpha*bc_loss
+
                 loss_total_step.backward()
                 loss_total_epoch += loss_total_step.item() / steps_per_epoch
 
@@ -300,8 +357,29 @@ class Trainer:
 
             optimizer.step()
 
-        metrics = {f'{str(component)}/train/total_loss': loss_total_epoch, **intermediate_losses}
+        if bc_dataset:
+            metrics = {f'{str(component)}/train/total_loss': loss_total_epoch, f'{str(component)}/train/imagination_loss': imagination_total_loss.item(), f'{str(component)}/train/alpha': alpha, f'{str(component)}/train/bc_loss': bc_total_loss.item(), f'{str(component)}/train/bc_acc': avg_bc_acc.item(), **intermediate_losses}
+        else:
+            metrics = {f'{str(component)}/train/total_loss': loss_total_epoch, **intermediate_losses}
         return metrics
+  
+    def bc_loss_scale(self, epoch):
+        total_epochs = self.cfg.common.epochs
+        start_epochs = self.cfg.training.actor_critic.start_after_epochs
+        if self.cfg.training.regularize_schedule == 'cosine':
+            factor = 0.5 * (1 + np.cos(np.pi * (epoch - start_epochs) / (total_epochs - start_epochs)))
+            return self.cfg.training.base_bc_alpha * factor
+        elif self.cfg.training.regularize_schedule == 'linear':
+            factor = 1 - (epoch - start_epochs) / (total_epochs - start_epochs)
+            return self.cfg.training.base_bc_alpha * factor
+        elif self.cfg.training.regularize_schedule == 'exp':
+            factor = self.cfg.training.exp_gamma ** (epoch - start_epochs)
+            return self.cfg.training.base_bc_alpha * factor
+        elif self.cfg.training.regularize_schedule == 'constant':
+            return self.cfg.training.base_bc_alpha / 3.0
+        else:
+            raise ValueError("Wrong regularize_schedule type")
+            
 
     @torch.no_grad()
     def eval_agent(self, epoch: int) -> None:
@@ -385,10 +463,16 @@ class Trainer:
             if self.cfg.evaluation.should:
                 torch.save(self.test_dataset.num_seen_episodes, self.ckpt_dir / 'num_seen_episodes_test_dataset.pt')
     
-    def save_checkpoint(self, epoch: int, save_agent_only: bool) -> None:
+    def _save_bc_checkpoint(self, epoch: int):
+        torch.save(self.agent.state_dict(), self.ckpt_dir / f'{epoch}.pt')
+        
+    def save_checkpoint(self, epoch: int, save_agent_only: bool, bc: bool = False) -> None:
         tmp_checkpoint_dir = self.ckpt_dir / Path('checkpoints_tmp')
         shutil.copytree(src=self.ckpt_dir, dst=tmp_checkpoint_dir, ignore=shutil.ignore_patterns('dataset'))
-        self._save_checkpoint(epoch, save_agent_only)
+        if bc:
+            self._save_bc_checkpoint(epoch)
+        else:
+            self._save_checkpoint(epoch, save_agent_only)
         shutil.rmtree(tmp_checkpoint_dir)
 
     def load_checkpoint(self) -> None:

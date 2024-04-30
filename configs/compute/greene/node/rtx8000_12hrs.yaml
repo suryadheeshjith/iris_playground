@@ -5,4 +5,4 @@ nodes: ???
 gpus_per_node: ???
 mem_per_task: 200
 cpus_per_task: 12
-timeout: 360
+timeout: 720

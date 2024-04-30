@@ -42,7 +42,7 @@ initialization:
   load_actor_critic: False
 
 common:
-  epochs: 100
+  epochs: 600
   device: cuda:0
   do_checkpoint: True
   seed: 0
@@ -72,7 +72,7 @@ collection:
 
 
 bc:
-  should: False
+  should: True
   epochs: 50000
   learning_rate: 0.0001
   weight_decay: 0.0001
