@@ -6,8 +6,8 @@
   <!-- Replace the content tag with appropriate information -->
   <meta name="description" content="DESCRIPTION META TAG">
   <meta property="og:title" content="SOCIAL MEDIA TITLE TAG"/>
-  <meta property="og:description" content="SOCIAL MEDIA DESCRIPTION TAG TAG"/>
-  <meta property="og:url" content="URL OF THE WEBSITE"/>
+  <meta property="og:description" content="Behaviour cloning with World Models"/>
+  <meta property="og:url" content="https://suryadheeshjith.github.io/iris_playground/"/>
   <!-- Path to banner image, should be in the path listed below. Optimal dimenssions are 1200X630-->
   <meta property="og:image" content="static/image/your_banner_image.png" />
   <meta property="og:image:width" content="1200"/>
@@ -65,96 +65,192 @@
             <div class="is-size-5 publication-authors">
               <span class="author-block">Courant, New York University<br>DDRL Project Blog (2024)</span>
             </div>
+            <!-- Github link -->
+            <span class="link-block">
+              <a href="https://github.com/suryadheeshjith/iris_playground" target="_blank"
+              class="external-link button is-normal is-rounded is-dark">
+              <span class="icon">
+                <i class="fab fa-github"></i>
+              </span>
+              <span>Code</span>
+            </a>
+          </span>
           </div>
         </div>
       </div>
     </div>
   </section>
 
+
+<!-- Paper abstract -->
+<section class="section hero is-light">
+  <div class="container is-max-desktop">
+    <div class="columns is-centered has-text-centered">
+      <div class="column is-four-fifths">
+        <h2 class="title is-3">Abstract</h2>
+        <div class="content has-text-justified">
+          <p>In this project, we combine behavior cloning and world models, two techniques that are frequently used for their in-environment sample efficiency. Building on IRIS, a recent transformer-based world model system, we evaluate our approach using 3 Atari environments of differing difficulty levels from the Atari100k benchmark which uses 100k steps in the environment corresponding to 2 hours of real-time gameplay. We explore different methods of using behavior cloning and our findings show that IRIS agents trained with behavior cloning outperform the baseline model in two out of the three tested environments.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+<!-- End paper abstract -->
+
+
   <!-- Introduction -->
   <section class="section" id="Introduction">
     <div class="container is-max-desktop content">
       <h2 class="title">Introduction</h2>
       <p>
-        Reinforcement learning has been a popular research area in the field of artificial intelligence. The use of World Models has been a popular approach to solve the 
-        problem of model-based reinforcement learning. The project aims to explore the use of Behaviour Cloning Algorithms in World Models. In the following sections, we 
-        briefly explain World Models and Behaviour Cloning.
+        One key challenge in the field of Reinforcement Learning is its sample-inefficiency. Popular on-policy algorithms like REINFORCE or PPO frequently require millions of optimization steps and interactions with an environment, making them a subpar choice for computationally expensive environments or real-world rollouts.
+      <br/><br/>
+        Recent approaches in the space of model-based RL like ‘Dreamer-v3’ or ‘IRIS’ have attempted to tackle this problem by learning a ‘world model’, a model of the environment which predicts future states of the environment given actions. Such approaches have significantly cut down on the number of interactions with the real environment, with IRIS using only 100k steps, roughly 2 hours of real-world play time, on its Atari benchmarks.
+      <br/><br/>
+
+      Simultaneously, some research has used behavior cloning (BC), an approach which reframes decision-making as a supervised learning task, to avoid expensive and sample-inefficient reinforcement learning training runs altogether. Behavior cloning is also frequently used to initialize agents for further training, which can improve agents and speed up their training time.
+      Combining these approaches leads to multiple potential benefits:
+      <br/>
+      Firstly, during initial epochs, the world models are typically trained using rollouts from an untrained actor. While this strategy might lead to a lot of exploration, the world model will not be able to train on later parts of gameplay and good actions until the actor starts improving. By using a BC actor, we may get better and more representative trajectories to learn the world model from.
+      Secondly, while BC is often a fast way to gain a strong initialization, it frequently fails to generalize well to states outside of its training dataset. By continuing to train the actor using on-policy learning in the world model, we can make the actor more resilient and perform better.<br/><br/>
+      We use Atari environments in our experiments because there are numerous available benchmarks, including from IRIS itself. 
+      <br/><br/>
+      In this blog post we will first outline our experiments learning world models in state space, and why we abandoned this approach. Then, we will elaborate on our approach to behavior cloning and how we collected samples. Then, we will explain how our system is put together end-to-end and what steps were taken to improve on a naive BC initialization. Finally, we discuss our results and takeaways.
+
       </p>
-      <h3 class="subtitle">World Models</h3>
-      World models are sample efficient ... but ... 
-      Model-based .... (Clear difference between the two)
-
-      We use an agent called IRIS that trains in a transformer-based world model.
-
-      <h3 class="subtitle">Behaviour Cloning</h3>
-      Behaviour cloning is a simple and effective way to learn a policy from expert demonstrations. It is a supervised learning approach where the agent learns to mimic 
-      the expert's actions. The agent is trained on a dataset of expert demonstrations and learns to predict the actions of the expert given the state of the environment.
-      
     </div>
   </section>
-
-  <!-- Model Architecture -->
-  <section class="section" id="Model-Architecture">
+  <section class="section" id="IRIS">
     <div class="container is-max-desktop content">
-      <h2 class="title">World Model Architecture</h2>
+      <h2 class="title">IRIS</h2>
       <p>
-        IRIS learn its policy using a World model consisting of an encoder, decoder, and a transformer. The encoder is responsible for encoding the input image observations into a latent space
-        representation. The decoder is responsible for decoding the latent space representation back into the image space. The transformer is responsible for learning the
-        dynamics of the environment by autoregressively producing the next state, reward, and done signal, given the previous states and actions.
-      </p>
-      <br/>
+      We built our system around IRIS  because of the relative simplicity of its architecture. While Dreamer-v3 uses a lot of complicated tricks and components to train its model, IRIS is primarily built out of 3 components: An autoencoder, a GPT-like decoder-only transformer, which acts as the world model, and an actor network.
+      <br/><br/>
+
       <div style="text-align: center;">
-        <img src="static/images/iris_arch.png" alt="IRIS Architecture" width="80%">
+        <img src="static/images/iris_fig.png" alt="IRIS Architecture" width="80%">
         <br/>
         Autoregressive rollout of image observations in the world model using Encoder E, Decoder D and World model Transformer G. IRIS agent is represented by &pi;. Image taken from <cr cite='#bib01'>[1]</cr>
       </div>
+
+      <br/>
+      As shown in Figure x, The autoencoder outputs a series of latent representations from atari observations, and decodes latent representations back to the observation space, which the actor uses to predict actions. The world model takes the latent representations and predicted action and outputs a predicted latent representation of the future state. 
+
+      <br/><br/>
+      IRIS spends 50 epochs training the world model and tokenizer using their autoencoder and world model loss, before train the agent using the REINFORCE algorithm with advantage estimation and an entropy bonus on imagined trajectories.
+    </p>
     </div>
   </section>
-
-  <!-- Image-space vs State-space -->
-  <section class="section" id="ImagevsState">
+  <section class="section" id="State-space Observations">
     <div class="container is-max-desktop content">
-      <h2 class="title">Image-space vs State-space</h2>
-
-      Atari gym has two different observation types...Explain image and ram based observations. We opted to use state space due to resources ... but found it 
-      more difficult to train.
-    </div>
-  </section>
-
-  <!-- Data Collection-->
-  <section class="section" id="Data-Collection">
-    <div class="container is-max-desktop content">
-      <h2 class="title">Behaviour Cloning Data Collection</h2>
+      <h2 class="title">State-space or Image-space Observations?</h2>
       <p>
-        We collected data from expert demonstrations to train the model. The expert demonstrations were collected using ...
+      The original Atari2600 console represented each game’s state using 128 bytes in its RAM, which is a significantly smaller representation than pixel space observations. As an initial stage in our project, we wanted to investigate the feasibility of learning a world model using only the environment’s RAM output instead of images. By taking this approach we could potentially cut down on the amount of compute needed, and eliminate the autoencoder from IRIS’ architecture, thereby reducing the number of components that need to be trained in tandem.
+      <br/><br/>
+      In our experiments, we used RAM-only environments and matched the frame stacking logic used in pixel space IRIS to ensure the model has time-based data. For our BC data collection, we used expert rollouts in pixel space and accessed the underlying ALE (Arcade Learning Environment) in order to collect the RAM observations.
+      <br/><br/>
+      However, our experimental runs showed that when attempting to learn from RAM only, we fail to learn a good world model, and thus fail to learn a good agent.
+      <br/><br/>
+      This result unfortunately seems in line with other empirical findings on using the Atari RAM observations when training traditional RL agents: Even though it is tempting to think that a more dense representation will lead to better results and better learning, we found that learning IRIS agents using RAM observations takes significantly more training steps. 
+      
+      <strong>Since our initial hypothesis of faster training times did not hold true, we discarded this approach and moved forward with training in pixel space.</strong>
+    </p>
+    </div>
+  </section>
+  <section class="section" id="Behavior Cloning">
+    <div class="container is-max-desktop content">
+      <h2 class="title">Behavior Cloning Data Collection</h2>
+      <p>
+      In order to put together our system for BC training, we require an expert dataset. Since we are working on Atari environments, we chose to use existing trained agents. This was done for simplicity, but depending on the task it would be entirely sensible to use human expert data or other data sources.
+      <br/><br/>
+      To be able to learn well using behavior cloning, we need to ensure that the training data covers as much of the state space as possible. We additionally need to avoid some common pitfalls, like including contradictory data (different expert actions given the same observation). And, since we are intending to use this BC pre-training as initialization for downstream world model training, we need to match the shape of our collected observations to the shape of observations that IRIS uses.
+      <br/><br/>
+      While collecting the data, we included improvements based on prior work in BC for Atari: 
 
-        What we tried .. what didnt work...
+      <ol>
+        <li>Sticky actions: If we take repeated steps in the environment using a set sticky action probability while continuing to store the expert-predicted actions in our dataset, the expert data will cover a larger amount of the state space.
+        </li>
+        <li>Initial random steps: By spending a set number of initial steps acting randomly, the expert dataset will reflect a more diverse range of starting positions.
+        </li>
+      </ol>
+      <br/>
+      These parameters need to be tuned based on the game being played. For example, using a large number of initial random steps on Breakout, the expert will simply lose.
+      <br/><br/>
+      When working in imagination, IRIS uses 20 frames of context for its world model and actor. At the beginning of the imagined trajectory, the actor’s LSTM hidden states and context are initialized with these 20 frames. We tested different context lengths for our BC training and found that the actor learns better when given more context, so we collected sufficient information to match the context length provided by IRIS for each of our target actions.
+    </p>
+    </div>
+  </section>
+
+  <section class="section" id="Behavior Cloning Pretraining">
+    <div class="container is-max-desktop content">
+      <h2 class="title">Pretraining with Behavior Cloning</h2>
+      <p>
+        When initially pretraining our agent using behavior cloning, we quickly achieve high train accuracies of up to 99%, but with significant overfitting, where evaluation accuracy lags significantly behind. There are several possible reasons for this: Firstly, the environments are simple, but the state space is large, and despite using tricks when collecting the train set we may not have sufficient coverage for the model to generalize well. Secondly, there may be ambiguous observations, where the agent could take multiple legitimate moves, for which the model learns to memorize the correct answer in the train set.
+        <br/><br/>
+        <div style="text-align: center;">
+          <img src="static/images/bc_fig.png" alt="BC" width="80%">
+          <br/>
+          BC Pretraining
+        </div>
+        <br/>
+        By looking at the performance of the actor in evaluation trajectories, we can see that performance is acceptable but not great, suggesting that we are correctly learning some behaviors but not generalizing well. To boost the performance of our agent and reduce overfitting, we used common regularization techniques like weight decay, as well as commonly used frame augmentations like Random Shifts. Additionally, increasing the size of the dataset also had a huge impact on how well the model generalizes.
+        <br/><br/>
+        The best setting for pretraining included a BC dataset with 150k samples trained for 6 hours across all environments.
+      </p>
+      <h3 class="title">Technical Considerations</h3>
+      <p>
+        Unlike many current on-policy Atari agents, IRIS uses 64 x 64 observations with 3 color channels, which leads to additional complexity when collecting data through the gym environment.
+        <br/><br/>
+        Throughout this project, we attempted using experts from vae behavior cloning (cite), stable-baselines zoo, stable-baselines3 zoo, atari agents, and finally AtariARI. Throughout this process we found that most agents were trained using grayscale observations using the default resized dimensions of 84 x 84.
+        <br/><br/>
+        We used AtariARI’s trained PPO models in combination with OpenAI’s Gym environment. Since AtariARI’s agents are also trained on 84 x 84 grayscale observations, we collected observations by running two environments initialized with the same seed in parallel, one of them to provide grayscale observations to the expert, while the other provided multi-color observations which we saved for training our agents. 
+        <br/><br/>
+      </p>
+      <h3 class="title">Pretraining Results</h3>
+      <p>
+      When initially pretraining our agent using behavior cloning, we quickly achieve high train accuracies of up to 99%, but with significant overfitting, where evaluation accuracy lags significantly behind. There are several possible reasons for this: Firstly, the environments are simple, but the state space is large, and despite using tricks when collecting the train set we may not have sufficient coverage for the model to generalize well. Secondly, there may be ambiguous observations, where the agent could take multiple legitimate moves, for which the model learns to memorize the correct answer in the train set.
+      <br/><br/>
+      By looking at the performance of the actor in evaluation trajectories, we can see that performance is acceptable but not great, suggesting that we are correctly learning some behaviors but not generalizing well. To boost the performance of our agent and reduce overfitting, we used common regularization techniques like weight decay, as well as commonly used frame augmentations like Random Shifts. Additionally, increasing the size of the dataset also had a huge impact on how well the model generalizes.
+      <br/><br/>
+      The best setting for pretraining included a BC dataset with 150k samples trained for 6 hours across all environments.
+    </p>
+    </div>
+  </section>
+
+  <section class="section" id="Training IRIS">
+    <div class="container is-max-desktop content">
+      <h2 class="title">Training IRIS with Pretrained Agent</h2>
+      <p>
+        We first implemented a naive version of behavior cloning initialization for IRIS. After completing our BC agent pretraining, we simply loaded the pre-trained agent and proceeded with training IRIS as normal.
+        <br/><br/>
+        There are a few risks associated with this approach: Notably, IRIS’ actor uses a value function for advantage estimation, which is untrained at the point of launching the IRIS training. This could potentially lead to bad gradient updates and a collapse, similar to what we observed in our homework assignment 2.
+        <br/><br/>
+        Thus, we experimented with BC regularization, where we include an additional BC loss term based on our collected BC dataset while training IRIS. This BC loss term is weighted against the REINFORCE loss of IRIS according to a weighting factor, alpha. Concretely, the ‘policy loss’ becomes:
+        <br/><br/>
+
+        For our final evaluation, we run 4 experiments for each environment: 
+        <ol>
+          <li>Naive BC initialization</li>
+          <li>BC regularization following a cosine decaying pattern</li>
+          <li>BC regularization following an exponential decaying pattern</li>
+          <li>BC regularization following a constant weighting</li>
+        </ol>
+        <br/>
+        We wanted a selection of environments of different difficulty levels. Based on human-normalized scores with respect to the IRIS agent, we selected Breakout (Easy), Demon Attack (Medium) and Ms Pacman (Hard) as our environments for evaluation. Each experiment was trained for 24 hours on a single RTX8000 GPU, and the final results were computed by taking an average over 64 gameplay trajectories.
       </p>
     </div>
   </section>
 
-    <!-- BCRL -->
-    <section class="section" id="ImagevsState">
-      <div class="container is-max-desktop content">
-        <h2 class="title">BCRL</h2>
-
-        <br/>
-      All models have been trained on a single RTX8000 GPU for __ hours.
-
-  
-      <h3 class>BC Training Data</h3>
-      Difficulty in training...
-    
-    <h3 class>IRIS</h3>
-    insert video examples
-
-    <h3 class>BC</h3>
-    insert video examples
-
-    <h3 class>BC+IRIS</h3>
-    insert video examples
-  </div>
-</section>
+  <section class="section" id="Results">
+    <div class="container is-max-desktop content">
+      <h2 class="title">Results</h2>
+      <p>
+      
+        
+      </p>
+    </div>
+  </section>
 
   <!-- Conclusion -->
   <section class="section" id="Conclusion">
@@ -163,11 +259,13 @@
       <p>
         In this project, we ...
       </p>
+    </div>
+  </section>
 
     <!-- References --> 
     <section class="section" id="References">
       <div class="container is-max-desktop content">
-        <h2 class="title">Bibliography</h2>
+        <h2 class="title">References</h2>
           <ol>
             <li id='bib01'>Micheli, V., Alonso, E., & Fleuret, F. (2022). Transformers are sample-efficient world models. arXiv preprint arXiv:2209.00588.</li>
             <li id='bib02'>Anand, A., Racah, E., Ozair, S., Bengio, Y., Côté, M. A., & Hjelm, R. D. (2019). Unsupervised state representation learning in atari. Advances in neural information processing systems, 32.</li>
