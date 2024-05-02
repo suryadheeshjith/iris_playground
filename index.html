@@ -89,7 +89,11 @@
       <div class="column is-four-fifths">
         <h2 class="title is-3">Abstract</h2>
         <div class="content has-text-justified">
-          <p>In this project, we combine behavior cloning and world models, two techniques that are frequently used for their in-environment sample efficiency. Building on IRIS, a recent transformer-based world model system, we evaluate our approach using 3 Atari environments of differing difficulty levels from the Atari100k benchmark which uses 100k steps in the environment corresponding to 2 hours of real-time gameplay. We explore different methods of using behavior cloning and our findings show that IRIS agents trained with behavior cloning outperform the baseline model in two out of the three tested environments.
+          <p>In this project, we combine behavior cloning and world models, two techniques that are frequently used for their in-environment sample efficiency. 
+            Building on IRIS, a recent transformer-based world model system, we evaluate our approach using 3 Atari environments of differing difficulty levels
+             from the Atari100k benchmark. 
+             We explore different methods of using behavior cloning and our findings show that IRIS agents trained with behavior cloning outperform the baseline 
+             model in all of our environments.
           </p>
         </div>
       </div>
@@ -104,19 +108,20 @@
     <div class="container is-max-desktop content">
       <h2 class="title">Introduction</h2>
       <p>
-        One key challenge in the field of Reinforcement Learning is its sample-inefficiency. Popular on-policy algorithms like REINFORCE or PPO frequently require millions of optimization steps and interactions with an environment, making them a subpar choice for computationally expensive environments or real-world rollouts.
+        One key challenge in Reinforcement Learning is its sample inefficiency. Popular on-policy algorithms like REINFORCE or PPO frequently require millions of optimization steps and interactions with an environment, making them a subpar choice for computationally expensive environments or real-world rollouts.
       <br/><br/>
-        Recent approaches in the space of model-based RL like ‘Dreamer-v3’ or ‘IRIS’ have attempted to tackle this problem by learning a ‘world model’, a model of the environment which predicts future states of the environment given actions. Such approaches have significantly cut down on the number of interactions with the real environment, with IRIS using only 100k steps, roughly 2 hours of real-world play time, on its Atari benchmarks.
+        Recent approaches in model-based RL, like ‘Dreamer-v3’ or ‘IRIS,’ have attempted to tackle this problem by learning a ‘world model,’ a model of the environment that predicts future states of the environment given an action. Such approaches have significantly reduced the number of interactions with the environment, with IRIS using only 100k steps, roughly 2 hours of real gameplay time, on its Atari benchmarks.
       <br/><br/>
 
-      Simultaneously, some research has used behavior cloning (BC), an approach which reframes decision-making as a supervised learning task, to avoid expensive and sample-inefficient reinforcement learning training runs altogether. Behavior cloning is also frequently used to initialize agents for further training, which can improve agents and speed up their training time.
+      Simultaneously, some research has used behavior cloning (BC), which reframes decision-making as a supervised learning task, to avoid expensive and sample-inefficient reinforcement learning training runs altogether. Behavior cloning is also frequently used to initialize agents for further training, which can improve agents and speed up their training time.
       Combining these approaches leads to multiple potential benefits:
       <br/>
-      Firstly, during initial epochs, the world models are typically trained using rollouts from an untrained actor. While this strategy might lead to a lot of exploration, the world model will not be able to train on later parts of gameplay and good actions until the actor starts improving. By using a BC actor, we may get better and more representative trajectories to learn the world model from.
-      Secondly, while BC is often a fast way to gain a strong initialization, it frequently fails to generalize well to states outside of its training dataset. By continuing to train the actor using on-policy learning in the world model, we can make the actor more resilient and perform better.<br/><br/>
-      We use Atari environments in our experiments because there are numerous available benchmarks, including from IRIS itself. 
+      Firstly, during initial epochs, the world models are typically trained using rollouts from an untrained actor. While this strategy might lead to more exploration, the world model will not be able to train on later parts of gameplay and good actions until the actor starts improving. Using a BC actor may allow us to collect better and more representative trajectories to learn the world model.
+      Secondly, while BC is often a fast way to gain a strong initialization, it frequently fails to generalize well to states outside its training dataset. By continuing to train the actor using on-policy learning in the world model, we can make the actor more resilient and perform better.
       <br/><br/>
-      In this blog post we will first outline our experiments learning world models in state space, and why we abandoned this approach. Then, we will elaborate on our approach to behavior cloning and how we collected samples. Then, we will explain how our system is put together end-to-end and what steps were taken to improve on a naive BC initialization. Finally, we discuss our results and takeaways.
+      We implement and evaluate this combined training using IRIS and three different Atari environments from the Atari100k benchmark. The Atari100k benchmark evaluates agents' performance after 100k in-environment steps, approximately equivalent to 2 hours of real gameplay time.
+      <br/><br/>
+      In this blog post, we will first outline our experiments learning world models in state space and why we abandoned this approach. Then, we will elaborate on our approach to behavior cloning and how we collected samples. We will then explain how our system is put together end-to-end and what steps were taken to improve on a naive BC initialization. Finally, we will discuss our results and takeaways.
 
       </p>
     </div>
