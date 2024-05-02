@@ -245,9 +245,74 @@
   <section class="section" id="Results">
     <div class="container is-max-desktop content">
       <h2 class="title">Results</h2>
-      <p>
+      <p> 
       
-        
+        <!-- Table -->
+        <table style="text-align: center;">
+          <thead>
+            <tr>
+              <th>Environment</th>
+              <th>No BC</th>
+              <th>Naive BC</th>
+              <th>BC Regularization (Cosine)</th>
+              <th>BC Regularization (Exponential)</th>
+              <th>BC Regularization (Constant)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Breakout (20k steps)</td>
+              <td>10.625</td>
+              <td>2.703</td>
+              <td>12.296</td>
+              <td>12.031</td>
+              <td><strong>12.859</strong></td>
+            </tr>
+            <tr>
+              <td>Breakout (100k steps) [1]</td>
+              <td>84</td>
+              <td>-</td>
+              <td>-</td>
+              <td>-</td>
+              <td>-</td>
+            </tr>
+            <tr>
+              <td>Demon Attack (20k steps)</td>
+              <td>179.453</td>
+              <td><strong>769.921</strong></td>
+              <td>283.20</td>
+              <td>146.718</td>
+              <td>184.921</td>
+            </tr>
+            <tr>
+              <td>Demon Attack (100k steps) [1]</td>
+              <td>2034</td>
+              <td>-</td>
+              <td>-</td>
+              <td>-</td>
+              <td>-</td>
+            </tr>
+            <tr>
+              <td>Ms Pacman (20k steps)</td>
+              <td>370.156</td>
+              <td>445.0</td>
+              <td><strong>729.062</strong></td>
+              <td>378.437</td>
+              <td>544.843</td>
+            </tr>
+            <tr>
+              <td>Ms Pacman (100k steps) [1]</td>
+              <td>999</td>
+              <td>-</td>
+              <td>-</td>
+              <td>-</td>
+              <td>-</td>
+            </tr>
+          </tbody>
+        </table>
+        <div style="text-align: center;">
+          <p>Table 1: .</p>
+        </div>
       </p>
     </div>
   </section>
