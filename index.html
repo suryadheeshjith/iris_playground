@@ -28,7 +28,7 @@
   <link rel="icon" type="image/x-icon" href="static/images/favicon.ico">
   <link href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans|Castoro"
   rel="stylesheet">
-
+  <link rel="stylesheet" href="static/css/gallery2.css">
   <link rel="stylesheet" href="static/css/bulma.min.css">
   <link rel="stylesheet" href="static/css/bulma-carousel.min.css">
   <link rel="stylesheet" href="static/css/bulma-slider.min.css">
@@ -251,12 +251,11 @@
     <div class="container is-max-desktop content">
       <h2 class="title">Results</h2>
       <p> 
-      
         <!-- Table -->
         <table style="text-align: center;">
           <thead>
             <tr>
-              <th>Environment</th>
+              <th width="30%">Environment</th>
               <th>No BC</th>
               <th>Naive BC</th>
               <th>BC Regularization (Cosine)</th>
@@ -266,7 +265,7 @@
           </thead>
           <tbody>
             <tr>
-              <td>Breakout (20k steps)</td>
+              <td width="30%">Breakout (20k steps)</td>
               <td>6.062</td>
               <td>2.703</td>
               <td>12.296</td>
@@ -320,6 +319,86 @@
         </div>
       </p>
     </div>
+    <!-- Start of gallery -->
+    <div class="container is-max-desktop content">
+      <table style="text-align: center;">
+        <thead>
+          <tr>
+            <th width="10%">No BC</th>
+            <th width="12.5%">Naive BC</th>
+            <th width="13%">Cosine</th>
+            <th width="12.5%">Exponential</th>
+            <th width="10%">Constant</th>
+          </tr>
+        </thead>
+      </table>
+    </div>
+    <div class="container">
+      <div class="gallery">
+          <figure class="gallery__item gallery__item--1">
+              <img src="static/images/breakout/breakout_img.gif" alt="Gallery image 1" class="gallery__img">
+          </figure>
+          <figure class="gallery__item gallery__item--2">
+              <img src="static/images/breakout/breakout_naivebcrl.gif" alt="Gallery image 2" class="gallery__img">
+          </figure>
+          <figure class="gallery__item gallery__item--3">
+              <img src="static/images/breakout/breakout_cos.gif" alt="Gallery image 3" class="gallery__img">
+          </figure>
+          <figure class="gallery__item gallery__item--4">
+              <img src="static/images/breakout/breakout_exp.gif" alt="Gallery image 4" class="gallery__img">
+          </figure>
+          <figure class="gallery__item gallery__item--5">
+              <img src="static/images/breakout/breakout_constant.gif" alt="Gallery image 5" class="gallery__img">
+          </figure>
+      </div>
+    </div>
+    <br/>
+    <div class="columns is-centered has-text-centered">Fig. x Breakout Trajectories</div>
+    <br/>
+    <div class="container">
+      <div class="gallery">
+          <figure class="gallery__item gallery__item--1">
+              <img src="static/images/demonattack/img.gif" alt="Gallery image 1" class="gallery__img">
+          </figure>
+          <figure class="gallery__item gallery__item--2">
+              <img src="static/images/demonattack/naive.gif" alt="Gallery image 2" class="gallery__img">
+          </figure>
+          <figure class="gallery__item gallery__item--3">
+              <img src="static/images/demonattack/cos.gif" alt="Gallery image 3" class="gallery__img">
+          </figure>
+          <figure class="gallery__item gallery__item--4">
+              <img src="static/images/demonattack/exp.gif" alt="Gallery image 4" class="gallery__img">
+          </figure>
+          <figure class="gallery__item gallery__item--5">
+              <img src="static/images/demonattack/constant.gif" alt="Gallery image 5" class="gallery__img">
+          </figure>
+      </div>
+    </div>
+    <br/>
+    <div class="columns is-centered has-text-centered">Fig. x Demon Attack Trajectories</div>
+    <br/>
+    <div class="container">
+      <div class="gallery">
+          <figure class="gallery__item gallery__item--1">
+              <img src="static/images/mspacman/img.gif" alt="Gallery image 1" class="gallery__img">
+          </figure>
+          <figure class="gallery__item gallery__item--2">
+              <img src="static/images/mspacman/naive.gif" alt="Gallery image 2" class="gallery__img">
+          </figure>
+          <figure class="gallery__item gallery__item--3">
+              <img src="static/images/mspacman/cos.gif" alt="Gallery image 3" class="gallery__img">
+          </figure>
+          <figure class="gallery__item gallery__item--4">
+              <img src="static/images/mspacman/exp.gif" alt="Gallery image 4" class="gallery__img">
+          </figure>
+          <figure class="gallery__item gallery__item--5">
+              <img src="static/images/mspacman/constant.gif" alt="Gallery image 5" class="gallery__img">
+          </figure>
+      </div>
+    </div>
+    <br/>
+    <div class="columns is-centered has-text-centered">Fig. x Ms. Pacman Trajectories</div>
+    <br/>
   </section>
 
   <!-- Conclusion -->
