@@ -130,7 +130,7 @@
     <div class="container is-max-desktop content">
       <h2 class="title">IRIS</h2>
       <p>
-      We built our system around IRIS  because of the relative simplicity of its architecture. While Dreamer-v3 uses a lot of complicated tricks and components to train its model, IRIS is primarily built out of 3 components: An autoencoder, a GPT-like decoder-only transformer, which acts as the world model, and an actor network.
+        We built our system around IRIS  because of its relative simplicity of architecture. While Dreamer-v3 uses many complicated tricks and components to train its model, IRIS is primarily built out of three components: an autoencoder, a GPT-like decoder-only transformer, which acts as the world model, and an actor network.
       <br/><br/>
 
       <div style="text-align: center;">
@@ -140,7 +140,7 @@
       </div>
 
       <br/>
-      As shown in Figure x, The autoencoder outputs a series of latent representations from atari observations, and decodes latent representations back to the observation space, which the actor uses to predict actions. The world model takes the latent representations and predicted action and outputs a predicted latent representation of the future state. 
+      As shown in Figure x, the autoencoder outputs a series of latent representations of atari observations and decodes them back to the observation space, which the actor uses to predict actions. The world model takes the latent representations and predicted actions and outputs a predicted latent representation of the future state.
 
       <br/><br/>
       IRIS spends 50 epochs training the world model and tokenizer using their autoencoder and world model loss, before train the agent using the REINFORCE algorithm with advantage estimation and an entropy bonus on imagined trajectories.
@@ -149,17 +149,17 @@
   </section>
   <section class="section" id="State-space Observations">
     <div class="container is-max-desktop content">
-      <h2 class="title">State-space or Image-space Observations?</h2>
+      <h2 class="title">State Space or Pixel Space Observations?</h2>
       <p>
-      The original Atari2600 console represented each game’s state using 128 bytes in its RAM, which is a significantly smaller representation than pixel space observations. As an initial stage in our project, we wanted to investigate the feasibility of learning a world model using only the environment’s RAM output instead of images. By taking this approach we could potentially cut down on the amount of compute needed, and eliminate the autoencoder from IRIS’ architecture, thereby reducing the number of components that need to be trained in tandem.
+      The original Atari2600 console represented each game’s state using 128 bytes in its RAM, a significantly smaller representation than pixel space observations. As an initial stage in our project, we wanted to investigate the feasibility of learning a world model using only the environment’s RAM output instead of images. By taking this approach, we could potentially cut down on the amount of compute needed and eliminate the autoencoder from IRIS’ architecture, thereby reducing the number of components that need to be trained in tandem.
       <br/><br/>
-      In our experiments, we used RAM-only environments and matched the frame stacking logic used in pixel space IRIS to ensure the model has time-based data. For our BC data collection, we used expert rollouts in pixel space and accessed the underlying ALE (Arcade Learning Environment) in order to collect the RAM observations.
+      Our experiments for this used RAM-only environments and matched the frame stacking logic used in pixel-space IRIS to ensure the model has time-based data. We used expert rollouts in pixel space for our BC data collection and accessed the underlying ALE (Arcade Learning Environment) to collect the RAM observations.
       <br/><br/>
-      However, our experimental runs showed that when attempting to learn from RAM only, we fail to learn a good world model, and thus fail to learn a good agent.
+      However, our experimental runs showed that when attempting to learn from RAM only, we fail to learn a good world model and thus fail to learn a good agent.
       <br/><br/>
-      This result unfortunately seems in line with other empirical findings on using the Atari RAM observations when training traditional RL agents: Even though it is tempting to think that a more dense representation will lead to better results and better learning, we found that learning IRIS agents using RAM observations takes significantly more training steps. 
-      
-      <strong>Since our initial hypothesis of faster training times did not hold true, we discarded this approach and moved forward with training in pixel space.</strong>
+      Unfortunately, this result seems in line with other empirical findings on using the Atari RAM observations when training traditional RL agents: Even though it is tempting to think that a more dense representation will lead to better results and better learning, we found that learning IRIS agents using RAM observations takes significantly more training steps. 
+
+      <strong>Since our initial hypothesis of faster training times was false, we discarded this approach and moved forward with training in pixel space.</strong>
     </p>
     </div>
   </section>
@@ -167,11 +167,11 @@
     <div class="container is-max-desktop content">
       <h2 class="title">Behavior Cloning Data Collection</h2>
       <p>
-      In order to put together our system for BC training, we require an expert dataset. Since we are working on Atari environments, we chose to use existing trained agents. This was done for simplicity, but depending on the task it would be entirely sensible to use human expert data or other data sources.
+      To build our system for BC pre-training, we need expert datasets. Since we are working on Atari environments, we used available pre-trained agents. This choice was made for simplicity, but using human expert data or other data sources would be preferred in a scenario without an expert.
       <br/><br/>
-      To be able to learn well using behavior cloning, we need to ensure that the training data covers as much of the state space as possible. We additionally need to avoid some common pitfalls, like including contradictory data (different expert actions given the same observation). And, since we are intending to use this BC pre-training as initialization for downstream world model training, we need to match the shape of our collected observations to the shape of observations that IRIS uses.
+      To be able to learn well using behavior cloning, we need to ensure that the training data covers as much of the state space as possible. We additionally need to avoid some common pitfalls, like including contradictory data (different expert actions given the same observation). And, since we intend to use this BC pre-training as initialization for downstream world model training, we need to match the shape of our collected observations to the shape of observations that IRIS uses.
       <br/><br/>
-      While collecting the data, we included improvements based on prior work in BC for Atari: 
+      While collecting the data, we included improvements based on prior work in BC for Atari:
 
       <ol>
         <li>Sticky actions: If we take repeated steps in the environment using a set sticky action probability while continuing to store the expert-predicted actions in our dataset, the expert data will cover a larger amount of the state space.
@@ -180,9 +180,9 @@
         </li>
       </ol>
       <br/>
-      These parameters need to be tuned based on the game being played. For example, using a large number of initial random steps on Breakout, the expert will simply lose.
+      These parameters need to be tuned based on the chosen environment. For example, using a large number of initial random steps on Breakout will simply cause the expert to lose.
       <br/><br/>
-      When working in imagination, IRIS uses 20 frames of context for its world model and actor. At the beginning of the imagined trajectory, the actor’s LSTM hidden states and context are initialized with these 20 frames. We tested different context lengths for our BC training and found that the actor learns better when given more context, so we collected sufficient information to match the context length provided by IRIS for each of our target actions.
+      IRIS uses 20 context frames for its world model and actor when working in imagination. At the beginning of the imagined trajectory, the actor’s LSTM hidden states and context are initialized with these 20 frames. After testing different context lengths for our BC training, we found that the actor learns better when given more context, so we collected sufficient information to match the context length provided by IRIS for each target action.
     </p>
     </div>
   </section>
@@ -191,7 +191,7 @@
     <div class="container is-max-desktop content">
       <h2 class="title">Pretraining with Behavior Cloning</h2>
       <p>
-        When initially pretraining our agent using behavior cloning, we quickly achieve high train accuracies of up to 99%, but with significant overfitting, where evaluation accuracy lags significantly behind. There are several possible reasons for this: Firstly, the environments are simple, but the state space is large, and despite using tricks when collecting the train set we may not have sufficient coverage for the model to generalize well. Secondly, there may be ambiguous observations, where the agent could take multiple legitimate moves, for which the model learns to memorize the correct answer in the train set.
+        When initially pretraining our agent using behavior cloning, we quickly achieve high train accuracies of up to 99%, but with significant overfitting, where evaluation accuracy lags significantly behind. There are several possible reasons for this: Firstly, the environments are simple, but the state space is large, and despite using tricks when collecting the train set, we may not have sufficient coverage for the model to generalize well. Secondly, there may be ambiguous observations, where the agent could take multiple legitimate moves, for which the model learns to memorize the correct answer in the train set.
         <br/><br/>
         <div style="text-align: center;">
           <img src="static/images/bc_fig.png" alt="BC" width="80%">
@@ -199,17 +199,17 @@
           BC Pretraining
         </div>
         <br/>
-        By looking at the performance of the actor in evaluation trajectories, we can see that performance is acceptable but not great, suggesting that we are correctly learning some behaviors but not generalizing well. To boost the performance of our agent and reduce overfitting, we used common regularization techniques like weight decay, as well as commonly used frame augmentations like Random Shifts. Additionally, increasing the size of the dataset also had a huge impact on how well the model generalizes.
+        By looking at the actor's performance in evaluation trajectories, we can see that performance is acceptable but not great, suggesting that we are correctly learning some behaviors but not generalizing well. To boost the performance of our agent and reduce overfitting, we used common regularization techniques like weight decay and commonly used frame augmentations like Random Shifts. Additionally, increasing the dataset size also had a significant positive impact on how well the model generalizes.
         <br/><br/>
         The best setting for pretraining included a BC dataset with 150k samples trained for 6 hours across all environments.
       </p>
       <h3 class="title">Technical Considerations</h3>
       <p>
-        Unlike many current on-policy Atari agents, IRIS uses 64 x 64 observations with 3 color channels, which leads to additional complexity when collecting data through the gym environment.
+        Unlike most current on-policy Atari agents, IRIS uses 64 x 64 observations with three color channels, which leads to additional complexity when collecting data through the gym environment.
         <br/><br/>
-        Throughout this project, we attempted using experts from vae behavior cloning (cite), stable-baselines zoo, stable-baselines3 zoo, atari agents, and finally AtariARI. Throughout this process we found that most agents were trained using grayscale observations using the default resized dimensions of 84 x 84.
+        We attempted to use experts from stable-baselines zoo, stable-baselines3 zoo, and Atari Agents before finally settling on AtariARI's PPO agents. Throughout this process, we found that most agents were trained using grayscale observations with the default resized dimensions of 84 x 84.
         <br/><br/>
-        We used AtariARI’s trained PPO models in combination with OpenAI’s Gym environment. Since AtariARI’s agents are also trained on 84 x 84 grayscale observations, we collected observations by running two environments initialized with the same seed in parallel, one of them to provide grayscale observations to the expert, while the other provided multi-color observations which we saved for training our agents. 
+        We overcame this hurdle by running two environments initialized with the same seed in parallel. We used the first environment to provide grayscale observations to the expert and collected color observations for our dataset from the second environment. 
         <br/><br/>
       </p>
       <h3 class="title">Pretraining Results</h3>
