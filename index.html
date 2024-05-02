@@ -184,6 +184,15 @@
       <br/><br/>
       IRIS uses 20 context frames for its world model and actor when working in imagination. At the beginning of the imagined trajectory, the actor’s LSTM hidden states and context are initialized with these 20 frames. After testing different context lengths for our BC training, we found that the actor learns better when given more context, so we collected sufficient information to match the context length provided by IRIS for each target action.
     </p>
+    <h3 class="title">Technical Considerations</h3>
+      <p>
+        Unlike most current on-policy Atari agents, IRIS uses 64 x 64 observations with three color channels, which leads to additional complexity when collecting data through the gym environment.
+        <br/><br/>
+        We attempted to use experts from stable-baselines zoo, stable-baselines3 zoo, and Atari Agents before finally settling on AtariARI's PPO agents. Throughout this process, we found that most agents were trained using grayscale observations with the default resized dimensions of 84 x 84.
+        <br/><br/>
+        We overcame this hurdle by running two environments initialized with the same seed in parallel. We used the first environment to provide grayscale observations to the expert and collected color observations for our dataset from the second environment. 
+        <br/><br/>
+      </p>
     </div>
   </section>
 
@@ -203,23 +212,6 @@
         <br/><br/>
         The best setting for pretraining included a BC dataset with 150k samples trained for 6 hours across all environments.
       </p>
-      <h3 class="title">Technical Considerations</h3>
-      <p>
-        Unlike most current on-policy Atari agents, IRIS uses 64 x 64 observations with three color channels, which leads to additional complexity when collecting data through the gym environment.
-        <br/><br/>
-        We attempted to use experts from stable-baselines zoo, stable-baselines3 zoo, and Atari Agents before finally settling on AtariARI's PPO agents. Throughout this process, we found that most agents were trained using grayscale observations with the default resized dimensions of 84 x 84.
-        <br/><br/>
-        We overcame this hurdle by running two environments initialized with the same seed in parallel. We used the first environment to provide grayscale observations to the expert and collected color observations for our dataset from the second environment. 
-        <br/><br/>
-      </p>
-      <h3 class="title">Pretraining Results</h3>
-      <p>
-      When initially pretraining our agent using behavior cloning, we quickly achieve high train accuracies of up to 99%, but with significant overfitting, where evaluation accuracy lags significantly behind. There are several possible reasons for this: Firstly, the environments are simple, but the state space is large, and despite using tricks when collecting the train set we may not have sufficient coverage for the model to generalize well. Secondly, there may be ambiguous observations, where the agent could take multiple legitimate moves, for which the model learns to memorize the correct answer in the train set.
-      <br/><br/>
-      By looking at the performance of the actor in evaluation trajectories, we can see that performance is acceptable but not great, suggesting that we are correctly learning some behaviors but not generalizing well. To boost the performance of our agent and reduce overfitting, we used common regularization techniques like weight decay, as well as commonly used frame augmentations like Random Shifts. Additionally, increasing the size of the dataset also had a huge impact on how well the model generalizes.
-      <br/><br/>
-      The best setting for pretraining included a BC dataset with 150k samples trained for 6 hours across all environments.
-    </p>
     </div>
   </section>
 
@@ -227,15 +219,25 @@
     <div class="container is-max-desktop content">
       <h2 class="title">Training IRIS with Pretrained Agent</h2>
       <p>
-        We first implemented a naive version of behavior cloning initialization for IRIS. After completing our BC agent pretraining, we simply loaded the pre-trained agent and proceeded with training IRIS as normal.
+        We first implemented a naive version of BC initialization for IRIS. After completing our BC agent pre-training, we loaded the pre-trained agent’s weights and launched a standard IRIS training run.
         <br/><br/>
-        There are a few risks associated with this approach: Notably, IRIS’ actor uses a value function for advantage estimation, which is untrained at the point of launching the IRIS training. This could potentially lead to bad gradient updates and a collapse, similar to what we observed in our homework assignment 2.
+        However, there are additional considerations: Notably, the IRIS actor uses a value function for advantage estimation, which is untrained at the start of IRIS training. The untrained value function could potentially lead to subpar gradient updates and a collapse of the trained agent, similar to what we observed in our homework assignment 2.
         <br/><br/>
-        Thus, we experimented with BC regularization, where we include an additional BC loss term based on our collected BC dataset while training IRIS. This BC loss term is weighted against the REINFORCE loss of IRIS according to a weighting factor, alpha. Concretely, the ‘policy loss’ becomes:
+        Thus, we experimented with including an additional BC loss term based on our collected dataset as part of the actor’s policy loss. A weighting factor, alpha, determines the balance between the BC and imagination losses. Concretely, the policy loss becomes:
         <br/><br/>
 
-        For our final evaluation, we run 4 experiments for each environment: 
+        <div style="text-align: center;">
+          <img src="static/images/loss_eq.png" alt="Loss Equation" width="80%">
+          <br/>
+          Loss Equation
+        </div>
+        <br/>
+
+        We additionally wanted to evaluate different strategies for decaying the weighting factor. In our experiment, we chose to test a cosine decaying, exponentially decaying, and constant factor for alpha.
+
+        For our final evaluation, we run an unchanged IRIS baseline as well as 4 experiments for each environment: 
         <ol>
+          <li>IRIS baseline</li>
           <li>Naive BC initialization</li>
           <li>BC regularization following a cosine decaying pattern</li>
           <li>BC regularization following an exponential decaying pattern</li>
@@ -406,7 +408,14 @@
     <div class="container is-max-desktop content">
       <h2 class="title">Conclusion</h2>
       <p>
-        In this project, we ...
+        Based on the results, we find that initializing world model training using behavior cloning can have significant positive effects on training. In all three environments, we recorded improvements over the IRIS baseline while maintaining the benefits of both approaches for in-environment sample efficiency. This effect tends to exist for nearly all experiments using BC, though significant variability exists between runs.
+        Even though we only train using 20k in-environment steps, roughly equivalent to 24 minutes of real gameplay time and a fraction of the training time (1 day vs seven days), our agent makes significant headway towards the IRIS 100k benchmark on Ms Pacman and starts progressing significantly faster than our own IRIS baseline in Demon Attack.
+        However, the training results do not directly indicate if adding a BC term to the policy loss (BC regularization) makes a significant difference, as Naive BC outperforms the regularized versions on Demon Attack, whereas using regularization with a cosine decaying factor performed best on Ms Pacman.
+        Furthermore, since we could not train our approach for a length comparable to the IRIS 100k benchmark (7 days), we cannot conclude whether this approach can lead to an overall higher performance or if we will reach a plateau sooner.
+
+        While our results are positive, there are several caveats: Firstly, modern approaches to behavior cloning will use architectures like VAE or BeT to capture multimodal data from experts more adequately. By contrast, most world model approaches will use simpler networks for on-policy learning, meaning there is a limit to how well we can capture expert data.
+        World models also tend to use very specific tricks to work. In the case of IRIS, many context frames and resized, full-color observations are used, which sets it apart from most other Atari agents. Since we generated our data, we can match these requirements. Still, in many scenarios where BC is applicable, we need to use whichever data is already available, making using downstream world model training more difficult.
+        Finally, each environment has particular quirks, meaning we need to adjust our approach for each environment we are trying to learn.
       </p>
     </div>
   </section>
