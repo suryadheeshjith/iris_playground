@@ -174,7 +174,7 @@
       <br/><br/>
       Unfortunately, this result seems in line with other empirical findings on using the Atari RAM observations when training traditional RL agents<cr cite='#bib04'><sup>4<sup></cr>: Even though it is tempting to think that a more dense representation will lead to better results and better learning, we found that learning IRIS agents using RAM observations takes significantly more training steps. 
 
-      <strong>Since our initial hypothesis of faster training times was false, we discarded this approach and moved forward with training in pixel space.</strong>
+      Since our initial hypothesis of faster training times was false, we discarded this approach and moved forward with training in pixel space.
     </p>
     </div>
   </section>
@@ -267,7 +267,10 @@
     <div class="container is-max-desktop content">
       <h2 class="title">Results</h2>
       <p> 
-        In Table 
+
+        In Table 1, we show the evaluation results of the different configurations of training across environments, averaged over 64 trajectories. We see that
+        the various BC configurations outperform the IRIS baseline (No BC) in all environments considering 20k environment steps. In Breakout, BC Regularization with a constant scheduling factor performs best, while in Demon Attack, Naive BC outperforms the regularized versions. In Ms Pacman, BC Regularization with a cosine scheduling factor performs best.
+        <br/><br/>
         <!-- Table -->
         <table style="text-align: center;">
           <thead>
@@ -334,6 +337,11 @@
         <div style="text-align: center;">
           <p><strong>Table 1:</strong> Evaluation results of the different configurations of training across environments, averaged over 64 trajectories.</p>
         </div>
+        <br/>
+        The Naive BC configuration in the Breakout environment does a lot worse as the training collapsed, as shown in the trajectory (Second from left) in Figure , and the evaluation returns during training in Figure . Although in Demon Attack,
+        the Naive BC configuration does well to exploit the environment's mechanics as shown in the trajectory (second from left) in Figure . This is by no means the state of the art, but it is a good starting point for further exploration of the environment and thereby better agent behavior. In our most difficult environment,
+        Ms Pacman, the BC Regularization with a cosine scheduling factor does much better than the other configurations since it does not collapse into following the same path or get stuck as often in the trajectories (shown in Figure ) of the other configurations. Another interesting aspect of this agent is that it more consistently finds the portal to reach the other end of the map 
+        to avoid the ghosts.
       </p>
     </div>
     <!-- Start of gallery -->
@@ -422,14 +430,14 @@
   <!-- Conclusion -->
   <section class="section" id="Conclusion">
     <div class="container is-max-desktop content">
-      In Figure , we show the evaluation returns during training for each of the environments. 
+      In Figures  , we show the evaluation returns during training for each of the environments. We show the training for epoch 50 since we only begin training the actor from epoch 50. 
         <!-- Plots -->
         <div style="text-align: center;">
           <img src="static/images/breakout/breakout_returns.png" alt="Results" width="80%">
           <br/>
         </div>
         <div style="text-align: center;">
-          <p>Fig. x Evaluation Returns during Training in the Breakout environment. We show epochs 50-100 as we begin training the actor at epoch 50.  </p>
+          <p>Fig. x Evaluation Returns during Training in the Breakout environment. We plot epochs only from epoch 50 as we begin training the actor at epoch 50.  </p>
         </div>
         <br/>
         <div style="text-align: center;">
@@ -438,7 +446,7 @@
         </div>
         
         <div style="text-align: center;">
-          <p>Fig. x Evaluation Returns during Training in the Demon Attack environment. We show epochs 50-100 as we begin training the actor at epoch 50.  </p> 
+          <p>Fig. x Evaluation Returns during Training in the Demon Attack environment. We plot epochs only from epoch 50 as we begin training the actor at epoch 50.  </p> 
         </div>
         <br/>
         <div style="text-align: center;">
@@ -446,7 +454,7 @@
           <br/>
         </div>
       <div style="text-align: center;">
-        <p>Fig. x Evaluation Returns during Training in the Ms Pacman environment. We show epochs 50-100 as we begin training the actor at epoch 50.  </p>
+        <p>Fig. x Evaluation Returns during Training in the Ms Pacman environment. We plot epochs only from epoch 50 as we begin training the actor at epoch 50.  </p>
       </div>
       <br/>
       <h2 class="title">Conclusion</h2>
