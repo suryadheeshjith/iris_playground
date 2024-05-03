@@ -110,7 +110,7 @@
       <p>
         One key challenge in Reinforcement Learning is its sample inefficiency. Popular on-policy algorithms like REINFORCE or PPO frequently require millions of optimization steps and interactions with an environment, making them a subpar choice for computationally expensive environments or real-world rollouts.
       <br/><br/>
-        Recent approaches in model-based RL, like ‘Dreamer-v3’ or ‘IRIS,’ <cr cite='#bib03'><sup>3<sup></cr><cr cite='#bib01'><sup>1<sup></cr> have attempted to tackle this problem by learning a ‘world model,’ a model of the environment that predicts future states of the environment given an action. Such approaches have significantly reduced the number of interactions with the environment, with IRIS using only 100k steps, roughly 2 hours of real gameplay time, on its Atari benchmarks.
+        Recent approaches in model-based RL, like ‘Dreamer-v3’<cr cite='#bib03'><sup>3<sup></cr> or ‘IRIS,’ <cr cite='#bib01'><sup>1<sup></cr> have attempted to tackle this problem by learning a ‘world model,’ a model of the environment that predicts future states of the environment given an action. Such approaches have significantly reduced the number of interactions with the environment, with IRIS using only 100k steps, roughly 2 hours of real gameplay time, on its Atari benchmarks.
       <br/><br/>
 
       Simultaneously, some research has used behavior cloning (BC), which reframes decision-making as a supervised learning task, to avoid expensive and sample-inefficient reinforcement learning training runs altogether. Behavior cloning is also frequently used to initialize agents for further training, which can improve agents and speed up their training time.
