@@ -102,13 +102,28 @@
 </section>
 <!-- End paper abstract -->
 
+<section class="section">
+  <div class="container is-max-desktop">
+    <div class="gallery">
+        <figure class="gallery__item gallery__item--2">
+            <img src="static/images/breakout/breakout_constant.gif" alt="Gallery image 2" class="gallery__img">
+        </figure>
+        <figure class="gallery__item gallery__item--3">
+            <img src="static/images/demonattack/cos.gif" alt="Gallery image 3" class="gallery__img">
+        </figure> 
+        <figure class="gallery__item gallery__item--4">
+          <img src="static/images/mspacman/cos.gif" alt="Gallery image 4" class="gallery__img">
+      </figure>
+    </div>
+  </div>
+</section>
 
   <!-- Introduction -->
   <section class="section" id="Introduction">
     <div class="container is-max-desktop content">
       <h2 class="title">Introduction</h2>
       <p>
-        One key challenge in Reinforcement Learning is its sample inefficiency. Popular on-policy algorithms like REINFORCE or PPO frequently require millions of optimization steps and interactions with an environment, making them a subpar choice for computationally expensive environments or real-world rollouts.
+        One key challenge in reinforcement learning is its sample inefficiency. Popular on-policy algorithms like REINFORCE or PPO frequently require millions of optimization steps and interactions with an environment, making them a subpar choice for computationally expensive environments or real-world rollouts.
       <br/><br/>
         Recent approaches in model-based RL, like ‘Dreamer-v3’<cr cite='#bib03'><sup>3<sup></cr> or ‘IRIS,’ <cr cite='#bib01'><sup>1<sup></cr> have attempted to tackle this problem by learning a ‘world model,’ a model of the environment that predicts future states of the environment given an action. Such approaches have significantly reduced the number of interactions with the environment, with IRIS using only 100k steps, roughly 2 hours of real gameplay time, on its Atari benchmarks.
       <br/><br/>
