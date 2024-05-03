@@ -227,9 +227,9 @@
         <br/><br/>
 
         <div style="text-align: center;">
-          <img src="static/images/loss_eq.png" alt="Loss Equation" width="80%">
+          <img src="static/images/policy_loss.png" alt="Loss Equation" width="80%">
           <br/>
-          Loss Equation
+          Policy Loss Equation where &alpha; is the weighting factor,  epoch_i refers to the current epoch, and epoch_0 and epoch_n refer to the first and last epoch of actor-critic training respectively. &gamma; is set to 0.95 for all experiments using exponential decay.
         </div>
         <br/>
 
@@ -237,11 +237,11 @@
 
         For our final evaluation, we run an unchanged IRIS baseline as well as 4 experiments for each environment: 
         <ol>
-          <li>IRIS baseline</li>
-          <li>Naive BC initialization</li>
-          <li>BC regularization following a cosine decaying pattern</li>
-          <li>BC regularization following an exponential decaying pattern</li>
-          <li>BC regularization following a constant weighting</li>
+          <li>No BC</li>
+          <li>Naive BC</li>
+          <li>BC regularization with cosine scheduling</li>
+          <li>BC regularization with exponential scheduling</li>
+          <li>BC regularization with constant scheduling</li>
         </ol>
         <br/>
         We wanted a selection of environments of different difficulty levels. Based on human-normalized scores with respect to the IRIS agent, we selected Breakout (Easy), Demon Attack (Medium) and Ms Pacman (Hard) as our environments for evaluation. Each experiment was trained for 24 hours on a single RTX8000 GPU, and the final results were computed by taking an average over 64 gameplay trajectories.
@@ -253,6 +253,32 @@
     <div class="container is-max-desktop content">
       <h2 class="title">Results</h2>
       <p> 
+        <!-- Plots -->
+        <div style="text-align: center;">
+          <img src="static/images/breakout/breakout_returns.png" alt="Results" width="80%">
+          <br/>
+        </div>
+        <div style="text-align: center;">
+          <p>Fig. x Evaluation Returns during Training in the Breakout environment  </p>
+        </div>
+        <br/>
+        <div style="text-align: center;">
+          <img src="static/images/demonattack/demonattack_returns.png" alt="Results" width="80%">
+          <br/>
+        </div>
+        
+        <div style="text-align: center;">
+          <p>Fig. x Evaluation Returns during Training in the Demon Attack environment  </p>
+        </div>
+        <br/>
+        <div style="text-align: center;">
+          <img src="static/images/mspacman/mspacman_returns.png" alt="Results" width="80%">
+          <br/>
+        </div>
+      <div style="text-align: center;">
+        <p>Fig. x Evaluation Returns during Training in the Ms Pacman environment  </p>
+      </div>
+      <br/>
         <!-- Table -->
         <table style="text-align: center;">
           <thead>
@@ -317,7 +343,7 @@
           </tbody>
         </table>
         <div style="text-align: center;">
-          <p>Table 1: .</p>
+          <p>Table 1: Evaluation results of the different configurations of training across environments, averaged over 64 trajectories.</p>
         </div>
       </p>
     </div>
