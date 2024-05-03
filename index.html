@@ -235,7 +235,7 @@
       <p>
         We first implemented a naive version of BC initialization for IRIS. After completing our BC agent pre-training, we loaded the pre-trained agent’s weights and launched a standard IRIS training run.
         <br/><br/>
-        However, there are additional considerations: Notably, the IRIS actor uses a value function for advantage estimation, which is untrained at the start of IRIS training. The untrained value function could potentially lead to subpar gradient updates and a collapse of the trained agent, similar to what we observed in our homework assignment 2.
+        However, there are additional considerations: Notably, the IRIS actor uses a value function for advantage estimation, which is untrained at the start of IRIS training. The world model itself may also not be performing well yet. The combination of an untrained value function and not fully trained world model could lead to subpar gradient updates and a collapse of the trained agent, similar to what we observed in our homework assignment 2.
         <br/><br/>
         Thus, we experimented with including an additional BC loss term based on our collected dataset as part of the actor’s policy loss. A weighting factor, alpha, determines the balance between the BC and imagination losses. Concretely, the policy loss becomes:
         <br/><br/>
