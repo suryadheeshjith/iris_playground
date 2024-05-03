@@ -24,7 +24,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
 
-  <title>Behaviour cloning with World Models</title>
+  <title>Behavior Cloning with World Models</title>
   <link rel="icon" type="image/x-icon" href="static/images/favicon.ico">
   <link href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans|Castoro"
   rel="stylesheet">
@@ -52,7 +52,7 @@
       <div class="container is-max-desktop">
         <div class="columns is-centered">
           <div class="column has-text-centered">
-            <h1 class="title is-1 publication-title">Behaviour cloning with World Models</h1>
+            <h1 class="title is-1 publication-title">Behavior Cloning with World Models</h1>
             <div class="is-size-5 publication-authors">
               <!-- Paper authors -->
               <span class="author-block">
@@ -90,8 +90,8 @@
         <h2 class="title is-3">Abstract</h2>
         <div class="content has-text-justified">
           <p>In this project, we combine behavior cloning and world models, two techniques that are frequently used for their in-environment sample efficiency. 
-            Building on IRIS, a recent transformer-based world model system, we evaluate our approach using 3 Atari environments of differing difficulty levels
-             from the Atari100k benchmark. 
+            Building on IRIS<cr cite='#bib01'><sup>1</sup></cr>, a recent transformer-based world model system, we evaluate our approach using 3 Atari environments of differing difficulty levels
+             from the Atari100k<cr cite='#bib02'><sup>2<sup></cr> benchmark. 
              We explore different methods of using behavior cloning and our findings show that IRIS agents trained with behavior cloning outperform the baseline 
              model in all of our environments.
           </p>
@@ -110,7 +110,7 @@
       <p>
         One key challenge in Reinforcement Learning is its sample inefficiency. Popular on-policy algorithms like REINFORCE or PPO frequently require millions of optimization steps and interactions with an environment, making them a subpar choice for computationally expensive environments or real-world rollouts.
       <br/><br/>
-        Recent approaches in model-based RL, like ‘Dreamer-v3’ or ‘IRIS,’ have attempted to tackle this problem by learning a ‘world model,’ a model of the environment that predicts future states of the environment given an action. Such approaches have significantly reduced the number of interactions with the environment, with IRIS using only 100k steps, roughly 2 hours of real gameplay time, on its Atari benchmarks.
+        Recent approaches in model-based RL, like ‘Dreamer-v3’<cr cite='#bib03'><sup>3<sup></cr> or ‘IRIS,’ <cr cite='#bib01'><sup>1<sup></cr> have attempted to tackle this problem by learning a ‘world model,’ a model of the environment that predicts future states of the environment given an action. Such approaches have significantly reduced the number of interactions with the environment, with IRIS using only 100k steps, roughly 2 hours of real gameplay time, on its Atari benchmarks.
       <br/><br/>
 
       Simultaneously, some research has used behavior cloning (BC), which reframes decision-making as a supervised learning task, to avoid expensive and sample-inefficient reinforcement learning training runs altogether. Behavior cloning is also frequently used to initialize agents for further training, which can improve agents and speed up their training time.
@@ -136,7 +136,7 @@
       <div style="text-align: center;">
         <img src="static/images/iris_fig.png" alt="IRIS Architecture" width="80%">
         <br/>
-        Autoregressive rollout of image observations in the world model using Encoder E, Decoder D and World model Transformer G. IRIS agent is represented by &pi;. Image taken from <cr cite='#bib01'>[1]</cr>
+        Autoregressive rollout of image observations in the world model using Encoder E, Decoder D and World model Transformer G. IRIS agent is represented by &pi;. Image taken from <cr cite='#bib01'><sup>1<sup></cr>
       </div>
 
       <br/>
@@ -157,7 +157,7 @@
       <br/><br/>
       However, our experimental runs showed that when attempting to learn from RAM only, we fail to learn a good world model and thus fail to learn a good agent.
       <br/><br/>
-      Unfortunately, this result seems in line with other empirical findings on using the Atari RAM observations when training traditional RL agents: Even though it is tempting to think that a more dense representation will lead to better results and better learning, we found that learning IRIS agents using RAM observations takes significantly more training steps. 
+      Unfortunately, this result seems in line with other empirical findings on using the Atari RAM observations when training traditional RL agents<cr cite='#bib04'><sup>4<sup></cr>: Even though it is tempting to think that a more dense representation will lead to better results and better learning, we found that learning IRIS agents using RAM observations takes significantly more training steps. 
 
       <strong>Since our initial hypothesis of faster training times was false, we discarded this approach and moved forward with training in pixel space.</strong>
     </p>
@@ -171,7 +171,7 @@
       <br/><br/>
       To be able to learn well using behavior cloning, we need to ensure that the training data covers as much of the state space as possible. We additionally need to avoid some common pitfalls, like including contradictory data (different expert actions given the same observation). And, since we intend to use this BC pre-training as initialization for downstream world model training, we need to match the shape of our collected observations to the shape of observations that IRIS uses.
       <br/><br/>
-      While collecting the data, we included improvements based on prior work in BC for Atari:
+      While collecting the data, we included improvements based on prior work in BC for Atari <cr cite='#bib05'><sup>5<sup></cr>:
 
       <ol>
         <li>Sticky actions: If we take repeated steps in the environment using a set sticky action probability while continuing to store the expert-predicted actions in our dataset, the expert data will cover a larger amount of the state space.
@@ -188,7 +188,7 @@
       <p>
         Unlike most current on-policy Atari agents, IRIS uses 64 x 64 observations with three color channels, which leads to additional complexity when collecting data through the gym environment.
         <br/><br/>
-        We attempted to use experts from stable-baselines zoo, stable-baselines3 zoo, and Atari Agents before finally settling on AtariARI's PPO agents. Throughout this process, we found that most agents were trained using grayscale observations with the default resized dimensions of 84 x 84.
+        We attempted to use experts from stable-baselines zoo, stable-baselines3 zoo, and Atari Agents before finally settling on AtariARI<cr cite='#bib06'><sup>6<sup></cr>'s PPO agents. Throughout this process, we found that most agents were trained using grayscale observations with the default resized dimensions of 84 x 84.
         <br/><br/>
         We overcame this hurdle by running two environments initialized with the same seed in parallel. We used the first environment to provide grayscale observations to the expert and collected color observations for our dataset from the second environment. 
         <br/><br/>
@@ -301,7 +301,7 @@
               <td><strong>12.859</strong></td>
             </tr>
             <tr>
-              <td>Breakout (100k steps) [1]</td>
+              <td>Breakout (100k steps) <sup>1<sup></td>
               <td>84</td>
               <td>-</td>
               <td>-</td>
@@ -317,7 +317,7 @@
               <td>184.921</td>
             </tr>
             <tr>
-              <td>Demon Attack (100k steps) [1]</td>
+              <td>Demon Attack (100k steps) <sup>1<sup></td>
               <td>2034</td>
               <td>-</td>
               <td>-</td>
@@ -333,7 +333,7 @@
               <td>544.843</td>
             </tr>
             <tr>
-              <td>Ms Pacman (100k steps) [1]</td>
+              <td>Ms Pacman (100k steps) <sup>1<sup></td>
               <td>999</td>
               <td>-</td>
               <td>-</td>
@@ -452,9 +452,11 @@
         <h2 class="title">References</h2>
           <ol>
             <li id='bib01'>Micheli, V., Alonso, E., & Fleuret, F. (2022). Transformers are sample-efficient world models. arXiv preprint arXiv:2209.00588.</li>
-            <li id='bib02'>Anand, A., Racah, E., Ozair, S., Bengio, Y., Côté, M. A., & Hjelm, R. D. (2019). Unsupervised state representation learning in atari. Advances in neural information processing systems, 32.</li>
-            <li id='bib03'></li>
-            <li id='bib04'></li>
+            <li id='bib02'>Kaiser, L., Babaeizadeh, M., Milos, P., Osinski, B., Campbell, R. H., Czechowski, K., ... & Michalewski, H. (2019). Model-based reinforcement learning for atari. arXiv preprint arXiv:1903.00374.</li>
+            <li id='bib03'>Hafner, D., Pasukonis, J., Ba, J., & Lillicrap, T. (2023). Mastering diverse domains through world models. arXiv preprint arXiv:2301.04104.</li>
+            <li id='bib04'>Sygnowski, J., & Michalewski, H. (2017). Learning from the memory of Atari 2600. In Computer Games: 5th Workshop on Computer Games, CGW 2016, and 5th Workshop on General Intelligence in Game-Playing Agents, GIGA 2016, Held in Conjunction with the 25th International Conference on Artificial Intelligence, IJCAI 2016, New York, USA, July 9-10, 2016, Revised Selected Papers 5 (pp. 71-85). Springer International Publishing.</li>
+            <li id='bib05'>Chen, B., Tandon, S., Gorsich, D., Gorodetsky, A., & Veerapaneni, S. (2021, June). Behavioral cloning in atari games using a combined variational autoencoder and predictor model. In 2021 IEEE Congress on Evolutionary Computation (CEC) (pp. 2077-2084). IEEE.</li>
+            <li id='bib06'>Anand, A., Racah, E., Ozair, S., Bengio, Y., Côté, M. A., & Hjelm, R. D. (2019). Unsupervised state representation learning in atari. Advances in neural information processing systems, 32.</li>
           </ol>
       </div>
     </section>
