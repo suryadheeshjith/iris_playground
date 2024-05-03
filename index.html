@@ -269,7 +269,7 @@
       <p> 
 
         In Table 1, we show the evaluation results of the different configurations of training across environments, averaged over 64 trajectories. We see that
-        the various BC configurations outperform the IRIS baseline (No BC) in all environments considering 20k environment steps. In Breakout, BC Regularization with a constant scheduling factor performs best, while in Demon Attack, Naive BC outperforms the regularized versions. In Ms Pacman, BC Regularization with a cosine scheduling factor performs best.
+        the various BC configurations outperform the IRIS baseline (No BC) in all environments considering 20k environment steps. In Breakout, BC regularization with a constant scheduling factor performs best, while in Demon Attack, Naive BC outperforms the regularized versions. In Ms Pacman, BC regularization with a cosine scheduling factor performs best.
         <br/><br/>
         <!-- Table -->
         <table style="text-align: center;">
@@ -338,9 +338,9 @@
           <p><strong>Table 1:</strong> Evaluation results of the different configurations of training across environments, averaged over 64 trajectories.</p>
         </div>
         <br/>
-        The Naive BC configuration in the Breakout environment does a lot worse as the training collapsed, as shown in the trajectory (Second from left) in Figure 3, and the evaluation returns during training in Figure 6. Although in Demon Attack,
-        the Naive BC configuration does well to exploit the environment's mechanics as shown in the trajectory (second from left) in Figure 4. This is by no means the state of the art, but it is a good starting point for further exploration of the environment and thereby better agent behavior. In our most difficult environment,
-        Ms Pacman, the BC Regularization with a cosine scheduling factor does much better than the other configurations since it does not collapse into following the same path or get stuck as often in the trajectories (shown in Figure 5) of the other configurations. Another interesting aspect of this agent is that it more consistently finds the portal to reach the other end of the map 
+        The Naive BC configuration in the Breakout environment does a lot worse as the training collapsed, as shown in the trajectory (Second from left) in Figure 3, and the evaluation returns during training in Figure 6. Conversely, in Demon Attack,
+        the Naive BC configuration actually performs best and exploits the environment's mechanics as shown in the trajectory (second from left) in Figure 4. In our most difficult environment,
+        Ms Pacman, the BC regularization with a cosine scheduling factor does much better than the other configurations since it does not collapse into following the same path or get stuck as often in the trajectories (shown in Figure 5) of the other configurations. Another interesting aspect of this agent is that it more consistently finds the portal to reach the other end of the map 
         to avoid the ghosts.
       </p>
     </div>
