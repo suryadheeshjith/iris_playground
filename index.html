@@ -206,7 +206,6 @@
         We attempted to use experts from stable-baselines zoo, stable-baselines3 zoo, and Atari Agents before finally settling on AtariARI<cr cite='#bib06'><sup>6<sup></cr>'s PPO agents. Throughout this process, we found that most agents were trained using grayscale observations with the default resized dimensions of 84 x 84.
         <br/><br/>
         We overcame this hurdle by running two environments initialized with the same seed in parallel. We used the first environment to provide grayscale observations to the expert and collected color observations for our dataset from the second environment. 
-        <br/><br/>
       </p>
     </div>
   </section>
@@ -268,32 +267,7 @@
     <div class="container is-max-desktop content">
       <h2 class="title">Results</h2>
       <p> 
-        <!-- Plots -->
-        <div style="text-align: center;">
-          <img src="static/images/breakout/breakout_returns.png" alt="Results" width="80%">
-          <br/>
-        </div>
-        <div style="text-align: center;">
-          <p>Fig. x Evaluation Returns during Training in the Breakout environment  </p>
-        </div>
-        <br/>
-        <div style="text-align: center;">
-          <img src="static/images/demonattack/demonattack_returns.png" alt="Results" width="80%">
-          <br/>
-        </div>
-        
-        <div style="text-align: center;">
-          <p>Fig. x Evaluation Returns during Training in the Demon Attack environment  </p>
-        </div>
-        <br/>
-        <div style="text-align: center;">
-          <img src="static/images/mspacman/mspacman_returns.png" alt="Results" width="80%">
-          <br/>
-        </div>
-      <div style="text-align: center;">
-        <p>Fig. x Evaluation Returns during Training in the Ms Pacman environment  </p>
-      </div>
-      <br/>
+        In Table 
         <!-- Table -->
         <table style="text-align: center;">
           <thead>
@@ -358,7 +332,7 @@
           </tbody>
         </table>
         <div style="text-align: center;">
-          <p>Table 1: Evaluation results of the different configurations of training across environments, averaged over 64 trajectories.</p>
+          <p><strong>Table 1:</strong> Evaluation results of the different configurations of training across environments, averaged over 64 trajectories.</p>
         </div>
       </p>
     </div>
@@ -444,9 +418,37 @@
     <br/>
   </section>
 
+
   <!-- Conclusion -->
   <section class="section" id="Conclusion">
     <div class="container is-max-desktop content">
+      In Figure , we show the evaluation returns during training for each of the environments. 
+        <!-- Plots -->
+        <div style="text-align: center;">
+          <img src="static/images/breakout/breakout_returns.png" alt="Results" width="80%">
+          <br/>
+        </div>
+        <div style="text-align: center;">
+          <p>Fig. x Evaluation Returns during Training in the Breakout environment. We show epochs 50-100 as we begin training the actor at epoch 50.  </p>
+        </div>
+        <br/>
+        <div style="text-align: center;">
+          <img src="static/images/demonattack/demonattack_returns.png" alt="Results" width="80%">
+          <br/>
+        </div>
+        
+        <div style="text-align: center;">
+          <p>Fig. x Evaluation Returns during Training in the Demon Attack environment. We show epochs 50-100 as we begin training the actor at epoch 50.  </p> 
+        </div>
+        <br/>
+        <div style="text-align: center;">
+          <img src="static/images/mspacman/mspacman_returns.png" alt="Results" width="80%">
+          <br/>
+        </div>
+      <div style="text-align: center;">
+        <p>Fig. x Evaluation Returns during Training in the Ms Pacman environment. We show epochs 50-100 as we begin training the actor at epoch 50.  </p>
+      </div>
+      <br/>
       <h2 class="title">Conclusion</h2>
       <p>
         Based on the results, we find that initializing world model training using behavior cloning can have significant positive effects on training. In all three environments, we recorded improvements over the IRIS baseline while maintaining the benefits of both approaches for in-environment sample efficiency. This effect tends to exist for nearly all experiments using BC, though significant variability exists between runs.
